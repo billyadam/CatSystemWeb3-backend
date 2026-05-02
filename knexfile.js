@@ -14,9 +14,6 @@ const base = {
     directory: './src/database/migrations',
     tableName: 'knex_migrations',
   },
-  seeds: {
-    directory: './src/database/seeds',
-  },
 };
 
 module.exports = {
