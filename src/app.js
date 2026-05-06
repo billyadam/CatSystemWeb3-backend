@@ -1,9 +1,14 @@
 const express = require('express');
+const cors = require('cors');
 const authRouter = require('./routes/auth');
 const authMiddleware = require('./middleware/auth');
 
 const app = express();
 
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
+  credentials: true,
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
