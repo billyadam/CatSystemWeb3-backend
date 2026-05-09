@@ -1,3 +1,4 @@
 /node_modules
 .env
 .claude
+pnpm-workspace.yaml
