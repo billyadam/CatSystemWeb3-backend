@@ -1,5 +1,6 @@
 const jwksClient = require('jwks-rsa');
 const jwt = require('jsonwebtoken');
+const { PrivyClient } = require('@privy-io/server-auth');
 
 const client = jwksClient({
   jwksUri: `https://auth.privy.io/api/v1/apps/${process.env.PRIVY_APP_ID}/jwks.json`,
@@ -27,39 +28,33 @@ async function verifyPrivyToken(token) {
       },
       (err, decoded) => {
         if (err) return reject(err);
-
-        // Debug: log decoded token structure to verify linked_accounts shape
-        console.debug('[privy] decoded token:', JSON.stringify(decoded, null, 2));
-
         resolve(decoded);
       }
     );
   });
 }
 
-// Extracts the wallet address from the verified Privy token.
-//
-// Wallet is REQUIRED. We do not fall back to Google or email identity.
-// This app uses wallet address as the sole identity for signing operations.
-//
-// Wallet is guaranteed to be present because:
-//   - Privy embedded wallets are ENABLED in our app config
-//   - Privy provisions a wallet for every user on first login,
-//     including Google OAuth users
-//
-// If wallet is missing, it means embedded wallets are disabled or
-// Privy's provisioning failed — both are misconfigurations we must reject.
-function extractWalletAddress(decoded) {
-  const accounts = decoded.linked_accounts || [];
-  const wallet = accounts.find((a) => a.type === 'wallet');
+// Fetches the full Privy user and returns the Solana wallet address.
+// External wallets (e.g. Phantom) are not in the JWT — they require an API call.
+async function getWalletAddress(privyUserId) {
+  const privy = new PrivyClient(process.env.PRIVY_APP_ID, process.env.PRIVY_APP_SECRET);
+
+  let user;
+  try {
+    user = await privy.getUser(privyUserId);
+  } catch (err) {
+    throw new Error(`Failed to fetch Privy user: ${err.message}`);
+  }
+
+  const wallet = (user.linkedAccounts || []).find(
+    (a) => a.type === 'wallet' && a.chainType === 'solana'
+  );
 
   if (!wallet?.address) {
-    // This should never happen with embedded wallets enabled.
-    // If it does, check your Privy dashboard: Settings → Embedded Wallets.
-    throw new Error('No wallet found in Privy token. Ensure embedded wallets are enabled in your Privy app.');
+    throw new Error(`No Solana wallet linked to Privy user ${privyUserId}`);
   }
 
   return wallet.address;
 }
 
-module.exports = { verifyPrivyToken, extractWalletAddress };
+module.exports = { verifyPrivyToken, getWalletAddress };

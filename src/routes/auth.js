@@ -1,5 +1,5 @@
 const express = require('express');
-const { verifyPrivyToken, extractWalletAddress } = require('../services/privy');
+const { verifyPrivyToken, getWalletAddress } = require('../services/privy');
 const { signAccessToken } = require('../services/jwt');
 const { findOrCreate } = require('../db');
 
@@ -23,12 +23,12 @@ router.post('/web3', async (req, res) => {
     return res.status(401).json({ message: 'Invalid or expired Privy token' });
   }
 
-  // 2. Extract wallet address — throws if missing (misconfiguration)
+  // 2. Fetch wallet address from Privy user record (supports external wallets like Phantom)
   let walletAddress;
   try {
-    walletAddress = extractWalletAddress(decoded);
+    walletAddress = await getWalletAddress(decoded.sub);
   } catch (err) {
-    console.error('[auth] Wallet extraction failed:', err.message);
+    console.error('[auth] Wallet lookup failed:', err.message);
     return res.status(400).json({ message: err.message });
   }
 
