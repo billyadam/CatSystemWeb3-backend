@@ -1,11 +1,11 @@
 const jwksClient = require('jwks-rsa');
 const jwt = require('jsonwebtoken');
+const { PrivyClient } = require('@privy-io/server-auth');
 
-// Privy publishes its public keys at this JWKS endpoint
 const client = jwksClient({
   jwksUri: `https://auth.privy.io/api/v1/apps/${process.env.PRIVY_APP_ID}/jwks.json`,
   cache: true,
-  cacheMaxAge: 10 * 60 * 1000, // 10 minutes
+  cacheMaxAge: 10 * 60 * 1000,
   rateLimit: true,
 });
 
@@ -16,12 +16,7 @@ function getSigningKey(header, callback) {
   });
 }
 
-/**
- * Verifies a Privy-issued JWT:
- * - signature validated via JWKS
- * - issuer and audience checked
- * - expiry enforced by jsonwebtoken
- */
+// Verifies the Privy JWT: signature (via JWKS), issuer, audience, and expiry.
 async function verifyPrivyToken(token) {
   return new Promise((resolve, reject) => {
     jwt.verify(
@@ -39,23 +34,27 @@ async function verifyPrivyToken(token) {
   });
 }
 
-/**
- * Extracts wallet address from decoded Privy token.
- * Prefers Solana wallets for this project; falls back to any wallet type.
- * NEVER trusts wallet address from request body — only from the verified token.
- */
-function extractWalletAddress(decoded) {
-  const accounts = decoded.linked_accounts || [];
+// Fetches the full Privy user and returns the Solana wallet address.
+// External wallets (e.g. Phantom) are not in the JWT — they require an API call.
+async function getWalletAddress(privyUserId) {
+  const privy = new PrivyClient(process.env.PRIVY_APP_ID, process.env.PRIVY_APP_SECRET);
 
-  const wallet =
-    accounts.find((a) => a.type === 'wallet' && a.chain_type === 'solana') ||
-    accounts.find((a) => a.type === 'wallet');
+  let user;
+  try {
+    user = await privy.getUser(privyUserId);
+  } catch (err) {
+    throw new Error(`Failed to fetch Privy user: ${err.message}`);
+  }
+
+  const wallet = (user.linkedAccounts || []).find(
+    (a) => a.type === 'wallet' && a.chainType === 'solana'
+  );
 
   if (!wallet?.address) {
-    throw new Error('No wallet address found in Privy token');
+    throw new Error(`No Solana wallet linked to Privy user ${privyUserId}`);
   }
 
   return wallet.address;
 }
 
-module.exports = { verifyPrivyToken, extractWalletAddress };
+module.exports = { verifyPrivyToken, getWalletAddress };
