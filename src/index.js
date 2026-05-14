@@ -9,6 +9,9 @@ const PORT = process.env.PORT || 3000;
 // const idl = require('./idl.json');
 
 (async () => {
+  console.log('PORT =', process.env.PORT);
+  console.log('ALLOWED_ORIGIN =', process.env.ALLOWED_ORIGIN);
+  
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on port ${PORT}`);
   });
