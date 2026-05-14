@@ -5,12 +5,14 @@ const authMiddleware = require('./middleware/auth');
 
 const app = express();
 
-const corsOptions = {
-  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
-  credentials: true,
-};
-app.use(cors(corsOptions));
-app.options('/', cors(corsOptions));
+// const corsOptions = {
+//   origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
+//   credentials: true,
+// };
+// app.use(cors(corsOptions));
+// app.options('/', cors(corsOptions));
+
+app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
