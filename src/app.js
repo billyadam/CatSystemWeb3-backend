@@ -16,6 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.get('/health', (req, res) => {
+  console.log("health")
   res.json({ status: 'ok' });
 });
 
