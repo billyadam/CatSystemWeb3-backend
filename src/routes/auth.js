@@ -1,7 +1,6 @@
 const express = require('express');
 const { verifyPrivyToken, extractWalletAddress } = require('../services/privy');
 const { signAccessToken } = require('../services/jwt');
-const { findByWallet, createUser } = require('../repositories/userRepository');
 
 const router = express.Router();
 
@@ -31,18 +30,6 @@ router.post('/web3', async (req, res) => {
     walletAddress = extractWalletAddress(decoded);
   } catch (err) {
     return res.status(400).json({ message: err.message });
-  }
-
-  // 3. Find or create user in database
-  let user;
-  try {
-    user = await findByWallet(walletAddress);
-    if (!user) {
-      user = await createUser(walletAddress);
-    }
-  } catch (err) {
-    console.error('[auth] Database error:', err.message);
-    return res.status(500).json({ message: 'Internal server error' });
   }
 
   // 4. Issue short-lived access token (wallet_address is the user ID)
