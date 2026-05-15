@@ -30,6 +30,7 @@ app.use('/users', usersRouter);
 // Protected route — returns the authenticated user's info
 app.get('/me', authMiddleware, async (req, res) => {
   try {
+    console.log("masuk")
     const user = await findByWallet(req.user.wallet);
 
     res.json({ 

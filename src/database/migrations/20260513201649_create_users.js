@@ -3,10 +3,9 @@
  */
 exports.up = function (knex) {
   return knex.schema.createTable('users', (table) => {
-    table.string('wallet_address', 100).primary();
-    table.string('name', 100).nullable();
+    table.string('wallet_address', 50).primary();
+    table.string('name', 100)
     table.text('bio').nullable();
-    table.string('username', 50).unique().nullable();
     table.timestamp('created_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
   });
 };
