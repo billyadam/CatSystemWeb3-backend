@@ -1,12 +1,16 @@
 const express = require('express');
-const { verifyPrivyToken, extractWalletAddress } = require('../services/privy');
+const { verifyPrivyToken, getWalletAddress } = require('../services/privy');
 const { signAccessToken } = require('../services/jwt');
+
 const { findByWallet, createUser } = require('../repositories/userRepository');
+
+const { findOrCreate } = require('../db');
+
 
 const router = express.Router();
 
 // POST /auth/web3
-// Body: { token: string }  — Privy JWT issued by the frontend
+// Body: { token: string } — Privy JWT from the frontend
 router.post('/web3', async (req, res) => {
   const { token } = req.body;
 
@@ -16,7 +20,7 @@ router.post('/web3', async (req, res) => {
     return res.status(400).json({ message: 'token is required' });
   }
 
-  // 1. Verify Privy JWT (signature, issuer, audience, expiry)
+  // 1. Verify Privy JWT: signature, issuer, audience, expiry
   let decoded;
   try {
     decoded = await verifyPrivyToken(token);
@@ -25,25 +29,19 @@ router.post('/web3', async (req, res) => {
     return res.status(401).json({ message: 'Invalid or expired Privy token' });
   }
 
-  // 2. Extract wallet address — never from request body, only from verified token
+  // 2. Fetch wallet address from Privy user record (supports external wallets like Phantom)
   let walletAddress;
   try {
-    walletAddress = extractWalletAddress(decoded);
+    walletAddress = await getWalletAddress(decoded.sub);
   } catch (err) {
+    console.error('[auth] Wallet lookup failed:', err.message);
     return res.status(400).json({ message: err.message });
   }
 
-  // 3. Find or create user in database
-  let user;
-  try {
-    user = await findByWallet(walletAddress);
-    if (!user) {
-      user = await createUser(walletAddress);
-    }
-  } catch (err) {
-    console.error('[auth] Database error:', err.message);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
+
+  // 3. Find or create user keyed by wallet address
+  const user = findOrCreate({ privyId: decoded.sub, wallet: walletAddress });
+
 
   // 4. Issue short-lived access token (wallet_address is the user ID)
   const accessToken = signAccessToken({
