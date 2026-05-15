@@ -2,7 +2,7 @@ const express = require('express');
 const { verifyPrivyToken, getWalletAddress } = require('../services/privy');
 const { signAccessToken } = require('../services/jwt');
 
-const { findByWallet, createUser } = require('../repositories/userRepository');
+
 
 const { findOrCreate } = require('../db');
 
@@ -41,6 +41,7 @@ router.post('/web3', async (req, res) => {
 
   // 3. Find or create user keyed by wallet address
   const user = findOrCreate({ privyId: decoded.sub, wallet: walletAddress });
+
 
 
   // 4. Issue short-lived access token (wallet_address is the user ID)

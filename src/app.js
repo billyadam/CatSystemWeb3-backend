@@ -32,23 +32,10 @@ app.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await findByWallet(req.user.wallet);
 
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const onboarded =
-      user.name !== null &&
-      user.name !== '' &&
-      user.username !== null &&
-      user.username !== '';
-
-    return res.json({
-      wallet: user.wallet_address,
-      name: user.name,
-      bio: user.bio,
-      username: user.username,
-      onboarded,
-      createdAt: user.created_at,
+    res.json({ 
+      id: req.user.sub, 
+      wallet: req.user.wallet,
+      user_data: user
     });
   } catch {
     return res.status(500).json({ message: 'Internal server error' });
