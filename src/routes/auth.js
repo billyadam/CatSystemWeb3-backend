@@ -1,7 +1,7 @@
 const express = require('express');
 const { verifyPrivyToken, extractWalletAddress } = require('../services/privy');
 const { signAccessToken } = require('../services/jwt');
-const { findOrCreateByWallet } = require('../db');
+const { findByWallet, createUser } = require('../repositories/userRepository');
 
 const router = express.Router();
 
@@ -9,6 +9,8 @@ const router = express.Router();
 // Body: { token: string }  — Privy JWT issued by the frontend
 router.post('/web3', async (req, res) => {
   const { token } = req.body;
+
+  console.log('[auth] Received token:', token ? `${token.substring(0, 30)}...` : 'undefined');
 
   if (!token) {
     return res.status(400).json({ message: 'token is required' });
@@ -31,16 +33,25 @@ router.post('/web3', async (req, res) => {
     return res.status(400).json({ message: err.message });
   }
 
-  // 3. Find or create user
-  const user = findOrCreateByWallet(walletAddress);
+  // 3. Find or create user in database
+  let user;
+  try {
+    user = await findByWallet(walletAddress);
+    if (!user) {
+      user = await createUser(walletAddress);
+    }
+  } catch (err) {
+    console.error('[auth] Database error:', err.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 
-  // 4. Issue short-lived access token
+  // 4. Issue short-lived access token (wallet_address is the user ID)
   const accessToken = signAccessToken({
-    sub: user.id,
-    wallet: user.wallet,
+    sub: walletAddress,
+    wallet: walletAddress,
   });
 
-  console.log(`[auth] Authenticated user=${user.id} wallet=${walletAddress}`);
+  console.log(`[auth] Authenticated wallet=${walletAddress}`);
 
   return res.json({ accessToken });
 });

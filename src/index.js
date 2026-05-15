@@ -1,25 +1,26 @@
 require('dotenv').config();
 const app = require('./app');
-const sequelize = require('./config/database');
-const { startWithReconnect } = require('./listeners/programListener');
-
+const db = require('./database/knex');
 const PORT = process.env.PORT || 3000;
 
-// Load your Anchor IDL here
-const idl = require('./idl.json');
+// TODO: re-enable Solana listener once idl.json is available
+// const sequelize = require('./config/database');
+// const { startWithReconnect } = require('./listeners/programListener');
+// const idl = require('./idl.json');
 
 (async () => {
   try {
-    await sequelize.authenticate();
+    await db.raw('SELECT 1');
     console.log('Database connection established.');
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-
-    startWithReconnect(idl);
   } catch (err) {
-    console.error('Startup error:', err);
+    console.error('Database connection failed:', err.message);
     process.exit(1);
   }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+
+  // await sequelize.authenticate();
+  // startWithReconnect(idl);
 })();

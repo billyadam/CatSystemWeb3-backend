@@ -45,7 +45,17 @@ async function verifyPrivyToken(token) {
  * NEVER trusts wallet address from request body — only from the verified token.
  */
 function extractWalletAddress(decoded) {
-  const accounts = decoded.linked_accounts || [];
+  // linked_accounts may be a stringified JSON array in Identity Tokens
+  let accounts = decoded.linked_accounts || [];
+  if (typeof accounts === 'string') {
+    try {
+      accounts = JSON.parse(accounts);
+    } catch {
+      accounts = [];
+    }
+  }
+
+  console.log('[auth] linked_accounts:', JSON.stringify(accounts, null, 2));
 
   const wallet =
     accounts.find((a) => a.type === 'wallet' && a.chain_type === 'solana') ||
