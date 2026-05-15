@@ -46,8 +46,8 @@ router.post('/web3', async (req, res) => {
 
   // 4. Issue short-lived access token (wallet_address is the user ID)
   const accessToken = signAccessToken({
-    sub: walletAddress,
-    wallet: walletAddress,
+    sub: user.id,
+    wallet: user.wallet,
   });
 
   console.log(`[auth] Authenticated wallet=${walletAddress}`);
