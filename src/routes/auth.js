@@ -1,7 +1,11 @@
 const express = require('express');
 const { verifyPrivyToken, getWalletAddress } = require('../services/privy');
 const { signAccessToken } = require('../services/jwt');
+
+
+
 const { findOrCreate } = require('../db');
+
 
 const router = express.Router();
 
@@ -9,6 +13,8 @@ const router = express.Router();
 // Body: { token: string } — Privy JWT from the frontend
 router.post('/web3', async (req, res) => {
   const { token } = req.body;
+
+  console.log('[auth] Received token:', token ? `${token.substring(0, 30)}...` : 'undefined');
 
   if (!token) {
     return res.status(400).json({ message: 'token is required' });
@@ -32,16 +38,19 @@ router.post('/web3', async (req, res) => {
     return res.status(400).json({ message: err.message });
   }
 
+
   // 3. Find or create user keyed by wallet address
   const user = findOrCreate({ privyId: decoded.sub, wallet: walletAddress });
 
-  // 4. Issue short-lived access token
+
+
+  // 4. Issue short-lived access token (wallet_address is the user ID)
   const accessToken = signAccessToken({
     sub: user.id,
     wallet: user.wallet,
   });
 
-  console.log(`[auth] Authenticated user=${user.id} wallet=${walletAddress}`);
+  console.log(`[auth] Authenticated wallet=${walletAddress}`);
 
   return res.json({ accessToken });
 });

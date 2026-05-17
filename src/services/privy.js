@@ -34,6 +34,7 @@ async function verifyPrivyToken(token) {
   });
 }
 
+
 // Fetches the full Privy user and returns the Solana wallet address.
 // External wallets (e.g. Phantom) are not in the JWT — they require an API call.
 // Add multiple wallet check attempts to handle delay from privy's backend
