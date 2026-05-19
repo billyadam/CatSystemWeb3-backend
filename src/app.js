@@ -1,6 +1,8 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const authRouter = require('./routes/auth');
+const uploadRouter = require('./routes/upload');
 const usersRouter = require('./routes/users');
 const authMiddleware = require('./middleware/auth');
 const { findByWallet } = require('./repositories/userRepository');
@@ -19,12 +21,15 @@ app.options('/', cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
+
 app.get('/health', (req, res) => {
   console.log("health")
   res.json({ status: 'ok' });
 });
 
 app.use('/auth', authRouter);
+app.use('/upload', uploadRouter);
 app.use('/users', usersRouter);
 
 // Protected route — returns the authenticated user's info
