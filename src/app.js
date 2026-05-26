@@ -24,7 +24,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 app.get('/health', (req, res) => {
-  console.log("health")
   res.json({ status: 'ok' });
 });
 
@@ -35,7 +34,6 @@ app.use('/users', usersRouter);
 // Protected route — returns the authenticated user's info
 app.get('/me', authMiddleware, async (req, res) => {
   try {
-    console.log("masuk")
     const user = await findByWallet(req.user.wallet);
 
     res.json({ 
