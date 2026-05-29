@@ -4,6 +4,4 @@
 pnpm-workspace.yaml
 /uploads/cats/*
 !/uploads/cats/.gitkeep
-src/idl.json
-
 CLAUDE.md

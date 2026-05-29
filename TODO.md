@@ -3,9 +3,9 @@
 ## Setup
 
 - [ ] Copy `.env.sample` to `.env` and fill in all values
-- [ ] Add `src/idl.json` — run `anchor build` in your program repo and copy from `target/idl/your_program.json`, or fetch with:
+- [ ] Add `src/idl/cat_system.json` — run `anchor build` in your program repo and copy from `target/idl/your_program.json`, or fetch with:
   ```bash
-  anchor idl fetch <PROGRAM_ID> --provider.cluster mainnet
+  anchor idl fetch <PROGRAM_ID> --provider.cluster mainnet > src/idl/cat_system.json
   ```
 
 ## Database

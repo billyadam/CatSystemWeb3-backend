@@ -8,9 +8,9 @@ const { startWithReconnect, backfillExistingCats } = require('./listeners/progra
 const PORT = process.env.PORT || 3000;
 
 function loadIdl() {
-  const idlPath = path.join(__dirname, 'idl.json');
+  const idlPath = path.join(__dirname, 'idl', 'cat_system.json');
   if (!fs.existsSync(idlPath)) {
-    console.warn('[startup] src/idl.json not found — skipping indexer. See TODO.md for how to fetch it.');
+    console.warn('[startup] src/idl/cat_system.json not found — skipping indexer. See TODO.md for how to fetch it.');
     return null;
   }
   return JSON.parse(fs.readFileSync(idlPath, 'utf8'));
