@@ -9,8 +9,8 @@ const PORT = process.env.PORT || 3000;
 
 function loadIdl() {
   const idlPath = path.join(__dirname, 'idl', 'cat_system.json');
-  if (!fs.existsSync(idlPath)) {
-    console.warn('[startup] src/idl/cat_system.json not found — skipping indexer. See TODO.md for how to fetch it.');
+  if (!fs.existsSync(idlPath) || !process.env.PROGRAM_ID) {
+    console.warn('[startup] src/idl/cat_system.json  or program ID not found — skipping indexer.');
     return null;
   }
   return JSON.parse(fs.readFileSync(idlPath, 'utf8'));
