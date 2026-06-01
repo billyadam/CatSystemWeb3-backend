@@ -4,6 +4,7 @@ const cors = require('cors');
 const authRouter = require('./routes/auth');
 const uploadRouter = require('./routes/upload');
 const usersRouter = require('./routes/users');
+const catsRouter = require('./routes/cats');
 const authMiddleware = require('./middleware/auth');
 const { findByWallet } = require('./repositories/userRepository');
 
@@ -30,6 +31,7 @@ app.get('/health', (req, res) => {
 app.use('/auth', authRouter);
 app.use('/upload', uploadRouter);
 app.use('/users', usersRouter);
+app.use('/cats', catsRouter);
 
 // Protected route — returns the authenticated user's info
 app.get('/me', authMiddleware, async (req, res) => {
