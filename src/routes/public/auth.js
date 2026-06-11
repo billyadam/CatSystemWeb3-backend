@@ -1,9 +1,9 @@
 const express = require('express');
-const { verifyPrivyToken, getWalletAddress } = require('../services/privy');
-const { signAccessToken } = require('../services/jwt');
-const { findByWallet: findAdminByWallet } = require('../repositories/adminRepository');
+const { verifyPrivyToken, getWalletAddress } = require('../../services/privy');
+const { signAccessToken } = require('../../services/jwt');
+const { findByWallet: findAdminByWallet } = require('../../repositories/adminRepository');
 
-const { findOrCreate } = require('../db');
+const { findOrCreate } = require('../../db');
 
 
 const router = express.Router();

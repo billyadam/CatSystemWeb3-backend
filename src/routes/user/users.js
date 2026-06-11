@@ -1,6 +1,6 @@
 const express = require('express');
-const authMiddleware = require('../middleware/auth');
-const { findByWallet, insertOnboarding } = require('../repositories/userRepository');
+const authMiddleware = require('../../middleware/auth');
+const { findByWallet, insertOnboarding } = require('../../repositories/userRepository');
 
 const router = express.Router();
 

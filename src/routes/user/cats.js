@@ -1,7 +1,7 @@
 const express = require('express');
-const authMiddleware = require('../middleware/auth');
-const { upload } = require('../middleware/upload');
-const { countByOwnerWallet } = require('../repositories/catRepository');
+const authMiddleware = require('../../middleware/auth');
+const { upload } = require('../../middleware/upload');
+const { countByOwnerWallet } = require('../../repositories/catRepository');
 
 const router = express.Router();
 
