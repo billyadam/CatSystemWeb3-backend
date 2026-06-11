@@ -1,14 +1,11 @@
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
-const authRouter = require('./routes/auth');
-const uploadRouter = require('./routes/upload');
-const usersRouter = require('./routes/users');
-const catsRouter = require('./routes/cats');
-const authMiddleware = require('./middleware/auth');
-const adminMiddleware = require('./middleware/admin');
-const { findByWallet } = require('./repositories/userRepository');
-const { findByWallet: findAdminByWallet } = require('./repositories/adminRepository');
+const authRouter = require('./routes/public/auth');
+const usersRouter = require('./routes/user/users');
+const catsRouter = require('./routes/user/cats');
+const adminRouter = require('./routes/admin/admin');
+const requestRouter = require('./routes/admin/request');
 
 const app = express();
 
@@ -36,31 +33,18 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
+// Public
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
-
 app.use('/auth', authRouter);
-app.use('/upload', uploadRouter);
+
+// User
 app.use('/users', usersRouter);
 app.use('/cats', catsRouter);
 
-app.get('/me', authMiddleware, async (req, res) => {
-  try {
-    const user = await findByWallet(req.user.wallet);
-    res.json({ id: req.user.sub, wallet: req.user.wallet, user_data: user });
-  } catch {
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-app.get('/admin/me', adminMiddleware, async (req, res) => {
-  try {
-    const admin = await findAdminByWallet(req.user.wallet);
-    res.json({ wallet: req.user.wallet, admin_data: admin });
-  } catch {
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-});
+// Admin
+app.use('/admin', adminRouter);
+app.use('/admin/requests', requestRouter);
 
 module.exports = app;
