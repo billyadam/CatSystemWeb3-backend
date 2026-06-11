@@ -1,6 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/auth');
-const { insertOnboarding } = require('../repositories/userRepository');
+const { findByWallet, insertOnboarding } = require('../repositories/userRepository');
 
 const router = express.Router();
 
@@ -32,6 +32,15 @@ router.post('/onboard', authMiddleware, async (req, res) => {
     bio: user.bio,
     onboarded: true,
   });
+});
+
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await findByWallet(req.user.wallet);
+    res.json({ id: req.user.sub, wallet: req.user.wallet, user_data: user });
+  } catch {
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 module.exports = router;
