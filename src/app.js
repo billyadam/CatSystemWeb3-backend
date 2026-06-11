@@ -6,13 +6,25 @@ const uploadRouter = require('./routes/upload');
 const usersRouter = require('./routes/users');
 const catsRouter = require('./routes/cats');
 const authMiddleware = require('./middleware/auth');
+const adminMiddleware = require('./middleware/admin');
 const { findByWallet } = require('./repositories/userRepository');
+const { findByWallet: findAdminByWallet } = require('./repositories/adminRepository');
 
 const app = express();
 
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:3005'];
+
 const corsOptions = {
-  origin: process.env.ALLOWED_ORIGIN || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin ${origin} not allowed`));
+    }
+  },
   credentials: true,
 };
 app.use(cors(corsOptions));
@@ -33,16 +45,19 @@ app.use('/upload', uploadRouter);
 app.use('/users', usersRouter);
 app.use('/cats', catsRouter);
 
-// Protected route — returns the authenticated user's info
 app.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await findByWallet(req.user.wallet);
+    res.json({ id: req.user.sub, wallet: req.user.wallet, user_data: user });
+  } catch {
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
-    res.json({ 
-      id: req.user.sub, 
-      wallet: req.user.wallet,
-      user_data: user
-    });
+app.get('/admin/me', adminMiddleware, async (req, res) => {
+  try {
+    const admin = await findAdminByWallet(req.user.wallet);
+    res.json({ wallet: req.user.wallet, admin_data: admin });
   } catch {
     return res.status(500).json({ message: 'Internal server error' });
   }
