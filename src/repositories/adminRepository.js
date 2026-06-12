@@ -5,4 +5,5 @@ async function findByWallet(walletAddress) {
   return admin || null;
 }
 
-module.exports = { findByWallet };
+module.exports = { findByWallet }; 
+
