@@ -4,7 +4,7 @@ const {
   findRequestById,
   approveRequest,
   rejectRequest,
-} = require("../../repositories/adminRepository");
+} = require("../../repositories/requestRepository");
 
 const router = express.Router();
 
