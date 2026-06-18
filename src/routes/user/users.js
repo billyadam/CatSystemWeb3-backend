@@ -1,6 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth');
-const { findByWallet, insertOnboarding, findActiveRequestByWallet, createBreederRequest } = require('../../repositories/userRepository');
+const { findByWallet, insertOnboarding } = require('../../repositories/userRepository');
+const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
 
 const router = express.Router();
 
