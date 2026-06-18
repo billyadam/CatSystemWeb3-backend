@@ -46,6 +46,6 @@ app.use('/cats', catsRouter);
 
 // Admin
 app.use('/admin', adminRouter);
-app.use('/admin/requests', requestRouter);
+app.use('/requests', requestRouter);
 
 module.exports = app;
