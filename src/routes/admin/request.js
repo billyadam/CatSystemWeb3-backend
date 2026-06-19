@@ -1,6 +1,6 @@
 const express = require('express');
 const adminMiddleware = require('../../middleware/admin');
-const { findAll, findByStatus } = require('../../repositories/getRequestRepository');
+const { findAll, findByStatus } = require('../../repositories/requestRepository');
 
 const router = express.Router();
 
