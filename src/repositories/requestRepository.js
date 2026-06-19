@@ -61,7 +61,7 @@ async function approveRequest(requestId, adminWallet) {
     // 2. Update user type: cat_lover → breeder
     const user = await trx('users')
       .where({ wallet_address: request.user_wallet })
-      .first();
+      .forUpdate().first();
     if (!user) throw new Error('User not found');
 
     const [updatedUser] = await trx('users')
