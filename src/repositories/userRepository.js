@@ -31,4 +31,7 @@ async function insertOnboarding(walletAddress, { name, bio }) {
   return user;
 }
 
+
+
 module.exports = { findByWallet, insertOnboarding };
+
