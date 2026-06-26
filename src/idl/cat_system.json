@@ -1,11 +1,80 @@
 {
-  "address": "6hAoHrSuAg3eA55igUeXYS8ckVTih6RheK2E2N9Zvca",
+  "address": "BVY3yTGbWAfAdJW7UW8SrKiTY33SE8dUHez72fHrkBpD",
   "metadata": {
     "name": "cat_system",
     "version": "0.1.0",
     "spec": "0.1.0"
   },
   "instructions": [
+    {
+      "name": "add_cat_image",
+      "discriminator": [
+        228,
+        119,
+        209,
+        97,
+        250,
+        142,
+        157,
+        164
+      ],
+      "accounts": [
+        {
+          "name": "cat",
+          "writable": true
+        },
+        {
+          "name": "cat_image",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  116,
+                  45,
+                  105,
+                  109,
+                  97,
+                  103,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "cat"
+              },
+              {
+                "kind": "account",
+                "path": "cat.image_count",
+                "account": "Cat"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "image_url",
+          "type": "string"
+        },
+        {
+          "name": "description",
+          "type": "string"
+        }
+      ]
+    },
     {
       "name": "create_cat",
       "discriminator": [
@@ -97,52 +166,16 @@
           }
         },
         {
-          "name": "breed",
-          "type": "string"
+          "name": "date_of_birth",
+          "type": "i64"
         },
         {
-          "name": "coat_color",
-          "type": "string"
-        },
-        {
-          "name": "coat_length",
+          "name": "bio_profile",
           "type": {
             "defined": {
-              "name": "CoatLength"
+              "name": "BioProfile"
             }
           }
-        },
-        {
-          "name": "eye_color",
-          "type": "string"
-        },
-        {
-          "name": "ear_type",
-          "type": {
-            "defined": {
-              "name": "EarType"
-            }
-          }
-        },
-        {
-          "name": "body_size",
-          "type": {
-            "defined": {
-              "name": "BodySize"
-            }
-          }
-        },
-        {
-          "name": "description",
-          "type": "string"
-        },
-        {
-          "name": "image_url_1",
-          "type": "string"
-        },
-        {
-          "name": "image_url_2",
-          "type": "string"
         }
       ]
     }
@@ -159,6 +192,19 @@
         145,
         105,
         45
+      ]
+    },
+    {
+      "name": "CatImage",
+      "discriminator": [
+        151,
+        99,
+        43,
+        70,
+        152,
+        215,
+        183,
+        170
       ]
     },
     {
@@ -188,6 +234,19 @@
         255,
         89
       ]
+    },
+    {
+      "name": "CatImageAdded",
+      "discriminator": [
+        27,
+        246,
+        18,
+        132,
+        118,
+        158,
+        132,
+        67
+      ]
     }
   ],
   "errors": [
@@ -203,31 +262,98 @@
     },
     {
       "code": 6002,
+      "name": "PersonalityTraitTooLong",
+      "msg": "Personality trait must be 32 characters or less"
+    },
+    {
+      "code": 6003,
       "name": "BreedTooLong",
       "msg": "Breed must be 32 characters or less"
     },
     {
-      "code": 6003,
+      "code": 6004,
       "name": "CoatColorTooLong",
       "msg": "Coat color must be 32 characters or less"
     },
     {
-      "code": 6004,
+      "code": 6005,
       "name": "EyeColorTooLong",
       "msg": "Eye color must be 32 characters or less"
     },
     {
-      "code": 6005,
+      "code": 6006,
       "name": "ImageUrlTooLong",
       "msg": "Image URL must be 256 characters or less"
     },
     {
-      "code": 6006,
+      "code": 6007,
+      "name": "ImageDescriptionTooLong",
+      "msg": "Image description must be 64 characters or less"
+    },
+    {
+      "code": 6008,
       "name": "NotOwner",
       "msg": "Not the cat owner"
+    },
+    {
+      "code": 6009,
+      "name": "ImageCountTooMany",
+      "msg": "Too many cat images"
     }
   ],
   "types": [
+    {
+      "name": "BioProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "breed",
+            "type": "string"
+          },
+          {
+            "name": "coat_color",
+            "type": "string"
+          },
+          {
+            "name": "coat_length",
+            "type": {
+              "defined": {
+                "name": "CoatLength"
+              }
+            }
+          },
+          {
+            "name": "eye_color",
+            "type": "string"
+          },
+          {
+            "name": "ear_type",
+            "type": {
+              "defined": {
+                "name": "EarType"
+              }
+            }
+          },
+          {
+            "name": "body_size",
+            "type": {
+              "defined": {
+                "name": "BodySize"
+              }
+            }
+          },
+          {
+            "name": "personality_trait",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          }
+        ]
+      }
+    },
     {
       "name": "BodySize",
       "type": {
@@ -271,52 +397,20 @@
             }
           },
           {
-            "name": "breed",
-            "type": "string"
+            "name": "date_of_birth",
+            "type": "i64"
           },
           {
-            "name": "coat_color",
-            "type": "string"
-          },
-          {
-            "name": "coat_length",
+            "name": "bio_profile",
             "type": {
               "defined": {
-                "name": "CoatLength"
+                "name": "BioProfile"
               }
             }
           },
           {
-            "name": "eye_color",
-            "type": "string"
-          },
-          {
-            "name": "ear_type",
-            "type": {
-              "defined": {
-                "name": "EarType"
-              }
-            }
-          },
-          {
-            "name": "body_size",
-            "type": {
-              "defined": {
-                "name": "BodySize"
-              }
-            }
-          },
-          {
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "name": "image_url_1",
-            "type": "string"
-          },
-          {
-            "name": "image_url_2",
-            "type": "string"
+            "name": "image_count",
+            "type": "u8"
           }
         ]
       }
@@ -351,56 +445,76 @@
             }
           },
           {
-            "name": "breed",
-            "type": "string"
+            "name": "date_of_birth",
+            "type": "i64"
           },
           {
-            "name": "coat_color",
-            "type": "string"
-          },
-          {
-            "name": "coat_length",
+            "name": "bio_profile",
             "type": {
               "defined": {
-                "name": "CoatLength"
+                "name": "BioProfile"
               }
             }
-          },
-          {
-            "name": "eye_color",
-            "type": "string"
-          },
-          {
-            "name": "ear_type",
-            "type": {
-              "defined": {
-                "name": "EarType"
-              }
-            }
-          },
-          {
-            "name": "body_size",
-            "type": {
-              "defined": {
-                "name": "BodySize"
-              }
-            }
-          },
-          {
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "name": "image_url_1",
-            "type": "string"
-          },
-          {
-            "name": "image_url_2",
-            "type": "string"
           },
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CatImage",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cat",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "image_url",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CatImageAdded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cat",
+            "type": "pubkey"
+          },
+          {
+            "name": "image_pda",
+            "type": "pubkey"
+          },
+          {
+            "name": "index",
+            "type": "u8"
+          },
+          {
+            "name": "image_url",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
           }
         ]
       }

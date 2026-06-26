@@ -8,7 +8,7 @@ fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const MAX_FILES = 2;
+const MAX_FILES = 10;
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),

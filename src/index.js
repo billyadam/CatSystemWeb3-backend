@@ -2,7 +2,7 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const app = require('./app');
-const sequelize = require('./config/database');
+const db = require('./database/knex');
 const { startWithReconnect, backfillExistingCats } = require('./listeners/programListener');
 
 const PORT = process.env.PORT || 3000;
@@ -18,7 +18,7 @@ function loadIdl() {
 
 (async () => {
   try {
-    await sequelize.authenticate();
+    await db.raw('SELECT 1');
     console.log('[startup] DB connected');
   } catch (err) {
     console.error('[startup] DB connection failed:', err.message);
