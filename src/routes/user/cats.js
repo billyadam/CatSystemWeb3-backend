@@ -13,14 +13,10 @@ const router = express.Router();
  *
  * Response 200:
  *   { count: number }
- *
- * Response 401: Missing / invalid token (handled by authMiddleware)
- * Response 500: Unexpected server error
  */
 router.get('/count', authMiddleware, async (req, res) => {
   try {
     const count = await countByOwnerWallet(req.user.wallet);
-
     return res.status(200).json({ count });
   } catch (err) {
     console.error('[cats] Error counting cats:', err.message);
@@ -28,19 +24,24 @@ router.get('/count', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /cats/images
-// Multipart body: `images` (file) × 2
-// Returns: { image_url_1, image_url_2 }
-router.post('/images', authMiddleware, upload.array('images', 2), (req, res) => {
-  if (!req.files || req.files.length !== 2) {
-    return res.status(400).json({ message: 'Exactly 2 images are required' });
+/**
+ * POST /cats/images
+ *
+ * Upload up to 10 cat images.
+ * Multipart body: `images` (file) × 1-10
+ * Returns: { images: [{ url, filename }] }
+ */
+router.post('/images', authMiddleware, upload.array('images', 10), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: 'At least 1 image is required' });
   }
 
-  const [first, second] = req.files;
-  res.json({
-    image_url_1: `/uploads/cats/${first.filename}`,
-    image_url_2: `/uploads/cats/${second.filename}`,
-  });
+  const images = req.files.map((file) => ({
+    url: `/uploads/cats/${file.filename}`,
+    filename: file.filename,
+  }));
+
+  res.json({ images });
 });
 
 router.use((err, _req, res, _next) => {
