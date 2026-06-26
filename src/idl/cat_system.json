@@ -1,5 +1,5 @@
 {
-  "address": "A5NzuxFQmaH1mKM5BUfnj4CRBWMketRrqUsXXY9PCwVG",
+  "address": "BVY3yTGbWAfAdJW7UW8SrKiTY33SE8dUHez72fHrkBpD",
   "metadata": {
     "name": "cat_system",
     "version": "0.1.0",
@@ -9,14 +9,14 @@
     {
       "name": "add_cat_image",
       "discriminator": [
-        214,
-        248,
-        176,
-        56,
-        206,
-        109,
-        43,
-        155
+        228,
+        119,
+        209,
+        97,
+        250,
+        142,
+        157,
+        164
       ],
       "accounts": [
         {
@@ -197,14 +197,14 @@
     {
       "name": "CatImage",
       "discriminator": [
-        237,
-        178,
-        200,
-        117,
-        15,
-        138,
-        171,
-        200
+        151,
+        99,
+        43,
+        70,
+        152,
+        215,
+        183,
+        170
       ]
     },
     {
@@ -238,14 +238,14 @@
     {
       "name": "CatImageAdded",
       "discriminator": [
-        57,
-        197,
-        248,
-        99,
-        62,
-        15,
-        174,
-        203
+        27,
+        246,
+        18,
+        132,
+        118,
+        158,
+        132,
+        67
       ]
     }
   ],
