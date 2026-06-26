@@ -1,4 +1,6 @@
 
+const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const adminMiddleware = require('../../middleware/admin');
 
@@ -23,7 +25,32 @@ router.get('/', adminMiddleware, async (req, res) => {
   }
 });
 
-// GET /admin/requests/:id
+// GET /requests/:id/pdf
+router.get("/:id/pdf", adminMiddleware, async (req, res) => {
+  try {
+    const request = await findRequestById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ message: "Request not found" });
+    }
+    if (!request.document_url) {
+      return res.status(404).json({ message: "No PDF document attached to this request" });
+    }
+
+    // document_url is stored as e.g. "/uploads/request-breeder/<filename>.pdf"
+    const filePath = path.join(__dirname, '..', '..', '..', request.document_url);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ message: "PDF file not found on server" });
+    }
+
+    return res.sendFile(filePath, { headers: { 'Content-Type': 'application/pdf' } });
+  } catch (err) {
+    console.error("[request] PDF error:", err.message);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// GET /requests/:id
 router.get("/:id", adminMiddleware, async (req, res) => {
   try {
     const request = await findRequestById(req.params.id);
@@ -37,7 +64,7 @@ router.get("/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-// PATCH /admin/requests/:id/accept
+// PATCH /requests/:id/accept
 // Body: { action: "approved" | "rejected" }
 router.patch("/:id/accept", adminMiddleware, async (req, res) => {
   const { action } = req.body;
