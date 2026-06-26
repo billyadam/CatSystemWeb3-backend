@@ -111,11 +111,17 @@ async function findActiveRequestByWallet(userWallet) {
 /**
  * Create a new breeder upgrade request for the given wallet.
  * @param {string} userWallet
+ * @param {string|null} documentUrl - Relative URL to the uploaded PDF (e.g. /uploads/request-breeder/...)
  * @returns {Promise<object>} the inserted row
  */
-async function createBreederRequest(userWallet) {
+async function createBreederRequest(userWallet, documentUrl = null) {
   const [row] = await db('requests')
-    .insert({ user_wallet: userWallet, status: 'pending', requested_at: new Date() })
+    .insert({
+      user_wallet: userWallet,
+      status: 'pending',
+      requested_at: new Date(),
+      document_url: documentUrl,
+    })
     .returning('*');
   return row;
 }
