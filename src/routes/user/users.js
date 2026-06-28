@@ -1,6 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth');
-const { uploadPdf } = require('../../middleware/uploadPdf');
+const { uploadPdf } = require('../../services/uploadPdf');
 const { findByWallet, insertOnboarding } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
 
