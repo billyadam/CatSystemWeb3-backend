@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth');
+const { uploadPdf } = require('../../services/uploadPdf');
 const { findByWallet, insertOnboarding } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
 
@@ -44,14 +45,26 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
-// POST /users/request-breeder
-// Requires: Bearer token (authMiddleware)
-router.post('/request-breeder', authMiddleware, async (req, res) => {
-  const userWallet = req.user.wallet;
+/**
+ * POST /users/request-breeder
+ *
+ * Submit a breeder upgrade request with a supporting PDF document.
+ * Multipart body: `document` (file, PDF only, max 10 MB)
+ * Requires: Bearer token in Authorization header.
+ *
+ * Response 201:
+ *   { message, request: { id, user_wallet, requested_at, status, document_url } }
+ */
+router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'A PDF document is required.' });
+  }
+
+  const documentUrl = `/uploads/request-breeder/${req.file.filename}`;
 
   try {
     // Guard: prevent duplicate active requests
-    const existing = await findActiveRequestByWallet(userWallet);
+    const existing = await findActiveRequestByWallet(req.user.wallet);
     if (existing) {
       return res.status(409).json({
         message:
@@ -62,7 +75,7 @@ router.post('/request-breeder', authMiddleware, async (req, res) => {
       });
     }
 
-    const request = await createBreederRequest(userWallet);
+    const request = await createBreederRequest(req.user.wallet, documentUrl);
 
     return res.status(201).json({
       message: 'Breeder upgrade request submitted successfully.',
@@ -71,12 +84,17 @@ router.post('/request-breeder', authMiddleware, async (req, res) => {
         user_wallet: request.user_wallet,
         requested_at: request.requested_at,
         status: request.status,
+        document_url: request.document_url,
       },
     });
   } catch (err) {
     console.error('[users] Error creating breeder request:', err.message);
     return res.status(500).json({ message: 'Internal server error' });
   }
+});
+
+router.use((err, _req, res, _next) => {
+  if (err) return res.status(400).json({ message: err.message });
 });
 
 module.exports = router;

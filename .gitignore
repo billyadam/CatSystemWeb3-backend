@@ -5,4 +5,6 @@
 pnpm-workspace.yaml
 /uploads/cats/*
 !/uploads/cats/.gitkeep
+/uploads/request-breeder/*
+!/uploads/request-breeder/.gitkeep
 CLAUDE.md
