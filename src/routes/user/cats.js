@@ -2,6 +2,7 @@ const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { upload } = require('../../middleware/upload');
 const { countByOwnerWallet } = require('../../repositories/catRepository');
+const { getAllBreeds } = require('../../repositories/breedRepository');
 
 const router = express.Router();
 
@@ -20,6 +21,22 @@ router.get('/count', authMiddleware, async (req, res) => {
     return res.status(200).json({ count });
   } catch (err) {
     console.error('[cats] Error counting cats:', err.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /cats/breeds
+ *
+ * Returns the list of all available cat breeds.
+ * Response 200: { breeds: [{ id, name, origin, description }] }
+ */
+router.get('/breeds', async (req, res) => {
+  try {
+    const breeds = await getAllBreeds();
+    return res.status(200).json({ breeds });
+  } catch (err) {
+    console.error('[cats] Error fetching breeds:', err.message);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
