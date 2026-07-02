@@ -257,46 +257,66 @@
     },
     {
       "code": 6001,
-      "name": "DescriptionTooLong",
-      "msg": "Description must be 512 characters or less"
-    },
-    {
-      "code": 6002,
       "name": "PersonalityTraitTooLong",
       "msg": "Personality trait must be 32 characters or less"
     },
     {
-      "code": 6003,
+      "code": 6002,
       "name": "BreedTooLong",
       "msg": "Breed must be 32 characters or less"
     },
     {
-      "code": 6004,
+      "code": 6003,
       "name": "CoatColorTooLong",
       "msg": "Coat color must be 32 characters or less"
     },
     {
-      "code": 6005,
+      "code": 6004,
       "name": "EyeColorTooLong",
       "msg": "Eye color must be 32 characters or less"
     },
     {
+      "code": 6005,
+      "name": "DistinctiveMarksTooLong",
+      "msg": "Distinctive marks must be 128 characters or less"
+    },
+    {
       "code": 6006,
+      "name": "SpecialSkillTooLong",
+      "msg": "Special skill must be 64 characters or less"
+    },
+    {
+      "code": 6007,
+      "name": "LikesTooLong",
+      "msg": "Likes must be 128 characters or less"
+    },
+    {
+      "code": 6008,
+      "name": "DislikesTooLong",
+      "msg": "Dislikes must be 128 characters or less"
+    },
+    {
+      "code": 6009,
+      "name": "AdditionalNotesTooLong",
+      "msg": "Additional notes must be 256 characters or less"
+    },
+    {
+      "code": 6010,
       "name": "ImageUrlTooLong",
       "msg": "Image URL must be 256 characters or less"
     },
     {
-      "code": 6007,
+      "code": 6011,
       "name": "ImageDescriptionTooLong",
       "msg": "Image description must be 64 characters or less"
     },
     {
-      "code": 6008,
+      "code": 6012,
       "name": "NotOwner",
       "msg": "Not the cat owner"
     },
     {
-      "code": 6009,
+      "code": 6013,
       "name": "ImageCountTooMany",
       "msg": "Too many cat images"
     }
@@ -314,6 +334,14 @@
           {
             "name": "coat_color",
             "type": "string"
+          },
+          {
+            "name": "pattern_type",
+            "type": {
+              "defined": {
+                "name": "PatternType"
+              }
+            }
           },
           {
             "name": "coat_length",
@@ -344,12 +372,85 @@
             }
           },
           {
+            "name": "body_type",
+            "type": {
+              "defined": {
+                "name": "BodyType"
+              }
+            }
+          },
+          {
+            "name": "distinctive_marks",
+            "type": "string"
+          },
+          {
+            "name": "blood_type",
+            "type": {
+              "defined": {
+                "name": "BloodType"
+              }
+            }
+          },
+          {
+            "name": "temperament",
+            "type": {
+              "defined": {
+                "name": "Temperament"
+              }
+            }
+          },
+          {
+            "name": "energy_level",
+            "type": {
+              "defined": {
+                "name": "EnergyLevel"
+              }
+            }
+          },
+          {
+            "name": "social_behavior",
+            "type": {
+              "defined": {
+                "name": "SocialBehavior"
+              }
+            }
+          },
+          {
+            "name": "special_skill",
+            "type": "string"
+          },
+          {
+            "name": "likes",
+            "type": "string"
+          },
+          {
+            "name": "dislikes",
+            "type": "string"
+          },
+          {
             "name": "personality_trait",
             "type": "string"
           },
           {
-            "name": "description",
+            "name": "additional_notes",
             "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BloodType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "A"
+          },
+          {
+            "name": "B"
+          },
+          {
+            "name": "AB"
           }
         ]
       }
@@ -367,6 +468,35 @@
           },
           {
             "name": "Large"
+          },
+          {
+            "name": "VeryLarge"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BodyType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Oriental"
+          },
+          {
+            "name": "Muscular"
+          },
+          {
+            "name": "Lean"
+          },
+          {
+            "name": "Ideal"
+          },
+          {
+            "name": "Stocky"
+          },
+          {
+            "name": "Overweight"
           }
         ]
       }
@@ -554,6 +684,29 @@
       }
     },
     {
+      "name": "EnergyLevel",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Low"
+          },
+          {
+            "name": "Calm"
+          },
+          {
+            "name": "Balanced"
+          },
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Hyper"
+          }
+        ]
+      }
+    },
+    {
       "name": "Gender",
       "type": {
         "kind": "enum",
@@ -568,6 +721,118 @@
       }
     },
     {
+      "name": "PatternCategory",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Tabby"
+          },
+          {
+            "name": "Solid"
+          },
+          {
+            "name": "Bicolor"
+          },
+          {
+            "name": "Special"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PatternColor",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Hitam"
+          },
+          {
+            "name": "Abu"
+          },
+          {
+            "name": "Orange"
+          },
+          {
+            "name": "Putih"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PatternType",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "category",
+            "type": {
+              "defined": {
+                "name": "PatternCategory"
+              }
+            }
+          },
+          {
+            "name": "visual_pattern",
+            "type": {
+              "defined": {
+                "name": "VisualPattern"
+              }
+            }
+          },
+          {
+            "name": "color",
+            "type": {
+              "defined": {
+                "name": "PatternColor"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "SocialBehavior",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Friendly"
+          },
+          {
+            "name": "Playful"
+          },
+          {
+            "name": "Independent"
+          },
+          {
+            "name": "GoodWithCat"
+          },
+          {
+            "name": "Vocal"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Temperament",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Friendly"
+          },
+          {
+            "name": "Aggressive"
+          },
+          {
+            "name": "Calm"
+          }
+        ]
+      }
+    },
+    {
       "name": "UserCounter",
       "type": {
         "kind": "struct",
@@ -575,6 +840,23 @@
           {
             "name": "cat_count",
             "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "VisualPattern",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Mackerel"
+          },
+          {
+            "name": "Classic"
+          },
+          {
+            "name": "Solid"
           }
         ]
       }

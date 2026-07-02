@@ -64,16 +64,31 @@ function eventToCatRow(event, meta = {}) {
 
 function eventToBioRow(event) {
   const bio = pick(event, 'bio_profile', 'bioProfile') || {};
+  const pattern = pick(bio, 'pattern_type', 'patternType') || {};
   return {
     cat_pda: event.cat.toBase58(),
-    breed: pick(bio, 'breed', 'breed') || '',
-    coat_color: pick(bio, 'coat_color', 'coatColor') || '',
-    coat_length: enumToString(pick(bio, 'coat_length', 'coatLength')) || '',
-    eye_color: pick(bio, 'eye_color', 'eyeColor') || '',
-    ear_type: enumToString(pick(bio, 'ear_type', 'earType')) || '',
-    body_size: enumToString(pick(bio, 'body_size', 'bodySize')) || '',
+    // Physical
+    breed:             pick(bio, 'breed', 'breed') || '',
+    coat_color:        pick(bio, 'coat_color', 'coatColor') || '',
+    pattern_category:  enumToString(pick(pattern, 'category', 'category')) || '',
+    pattern_visual:    enumToString(pick(pattern, 'visual_pattern', 'visualPattern')) || '',
+    pattern_color:     enumToString(pick(pattern, 'color', 'color')) || '',
+    coat_length:       enumToString(pick(bio, 'coat_length', 'coatLength')) || '',
+    eye_color:         pick(bio, 'eye_color', 'eyeColor') || '',
+    ear_type:          enumToString(pick(bio, 'ear_type', 'earType')) || '',
+    body_size:         enumToString(pick(bio, 'body_size', 'bodySize')) || '',
+    body_type:         enumToString(pick(bio, 'body_type', 'bodyType')) || '',
+    distinctive_marks: pick(bio, 'distinctive_marks', 'distinctiveMarks') || '',
+    blood_type:        enumToString(pick(bio, 'blood_type', 'bloodType')) || '',
+    // Personality
+    temperament:       enumToString(pick(bio, 'temperament', 'temperament')) || '',
+    energy_level:      enumToString(pick(bio, 'energy_level', 'energyLevel')) || '',
+    social_behavior:   enumToString(pick(bio, 'social_behavior', 'socialBehavior')) || '',
+    special_skill:     pick(bio, 'special_skill', 'specialSkill') || '',
+    likes:             pick(bio, 'likes', 'likes') || '',
+    dislikes:          pick(bio, 'dislikes', 'dislikes') || '',
     personality_trait: pick(bio, 'personality_trait', 'personalityTrait') || '',
-    description: bio.description || '',
+    additional_notes:  pick(bio, 'additional_notes', 'additionalNotes') || '',
   };
 }
 
@@ -109,16 +124,31 @@ function accountToCatRow(publicKey, account) {
 
 function accountToBioRow(publicKey, account) {
   const bio = account.bioProfile || {};
+  const pattern = bio.patternType || {};
   return {
     cat_pda: publicKey.toBase58(),
-    breed: bio.breed || '',
-    coat_color: bio.coatColor || '',
-    coat_length: enumToString(bio.coatLength) || '',
-    eye_color: bio.eyeColor || '',
-    ear_type: enumToString(bio.earType) || '',
-    body_size: enumToString(bio.bodySize) || '',
+    // Physical
+    breed:             bio.breed || '',
+    coat_color:        bio.coatColor || '',
+    pattern_category:  enumToString(pattern.category) || '',
+    pattern_visual:    enumToString(pattern.visualPattern) || '',
+    pattern_color:     enumToString(pattern.color) || '',
+    coat_length:       enumToString(bio.coatLength) || '',
+    eye_color:         bio.eyeColor || '',
+    ear_type:          enumToString(bio.earType) || '',
+    body_size:         enumToString(bio.bodySize) || '',
+    body_type:         enumToString(bio.bodyType) || '',
+    distinctive_marks: bio.distinctiveMarks || '',
+    blood_type:        enumToString(bio.bloodType) || '',
+    // Personality
+    temperament:       enumToString(bio.temperament) || '',
+    energy_level:      enumToString(bio.energyLevel) || '',
+    social_behavior:   enumToString(bio.socialBehavior) || '',
+    special_skill:     bio.specialSkill || '',
+    likes:             bio.likes || '',
+    dislikes:          bio.dislikes || '',
     personality_trait: bio.personalityTrait || '',
-    description: bio.description || '',
+    additional_notes:  bio.additionalNotes || '',
   };
 }
 
