@@ -26,7 +26,7 @@ router.get('/count', authMiddleware, async (req, res) => {
 });
 
 /**
- * GET /cats/getlist
+ * GET /cats
  *
  * Lists the cats owned by the authenticated user, returning only the fields
  * the cat-list card renders. Requires: Bearer token in Authorization header.
@@ -34,7 +34,7 @@ router.get('/count', authMiddleware, async (req, res) => {
  * Response 200:
  *   { cats: [{ cat_pda, name, gender, breed, image_url, block_time }] }
  */
-router.get('/getlist', authMiddleware, async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
     const rows = await findByOwnerWallet(req.user.wallet);
     const cats = rows.map((c) => ({
@@ -89,7 +89,7 @@ router.post('/images', authMiddleware, upload.array('images', 10), (req, res) =>
 });
 
 /**
- * GET /cats/getindividual/:pda
+ * GET /cats/:pda
  *
  * Returns a single cat owned by the authenticated user, with the fields the
  * individual cat page renders (header, DNA profile, bio, owner).
@@ -99,7 +99,7 @@ router.post('/images', authMiddleware, upload.array('images', 10), (req, res) =>
  * Response 404: cat not found
  * Response 403: cat belongs to another owner
  */
-router.get('/getindividual/:pda', authMiddleware, async (req, res) => {
+router.get('/:pda', authMiddleware, async (req, res) => {
   try {
     const cat = await findByPda(req.params.pda);
     if (!cat) {
