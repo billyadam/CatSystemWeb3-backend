@@ -117,16 +117,7 @@ router.get('/getindividual/:pda', authMiddleware, async (req, res) => {
         gender: cat.gender,
         image_url: cat.image_url || null,
         block_time: cat.block_time != null ? Number(cat.block_time) : null,
-        bio_profile: {
-          breed: cat.breed || '',
-          coat_color: cat.coat_color || '',
-          coat_length: cat.coat_length || '',
-          eye_color: cat.eye_color || '',
-          ear_type: cat.ear_type || '',
-          body_size: cat.body_size || '',
-          personality_trait: cat.personality_trait || '',
-          description: cat.description || '',
-        },
+        bio_profile: cat.bio_profile,
       },
     });
   } catch (err) {

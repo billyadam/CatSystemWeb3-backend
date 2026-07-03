@@ -31,7 +31,7 @@ async function findByOwnerWallet(ownerWallet) {
         db.raw('0')
       );
     })
-    .where('cats.owner_wallet', ownerWallet)
+    .where('cats.owner_wallet', ownerWallet) // tambahin index
     .orderBy('cats.cat_index', 'asc')
     .select(
       'cats.cat_pda',
@@ -44,39 +44,43 @@ async function findByOwnerWallet(ownerWallet) {
 }
 
 /**
- * Fetch a single cat with the fields the individual cat page renders:
- * header (name/gender/photo), DNA profile, bio (about/personality/color) and owner.
+ * Fetch a single cat for the individual cat page: header (name/gender/photo),
+ * owner, and the complete bio_profiles row (every column).
  *
  * @param {string} catPda - The cat's on-chain PDA (primary key).
- * @returns {Promise<object|null>} Flat row joined with bio_profiles, plus image_url; null if not found.
+ * @returns {Promise<object|null>} Cat row plus `image_url` and `bio_profile`
+ *   (the full bio_profiles row, or null if the cat has none); null if the cat
+ *   itself is not found.
  */
 async function findByPda(catPda) {
-  const cat = await db('cats')
-    .leftJoin('bio_profiles', 'cats.cat_pda', 'bio_profiles.cat_pda')
-    .where('cats.cat_pda', catPda)
+  // Base on bio_profiles, join cats for the header/owner fields the route needs
+  // (owner_wallet, name, gender, block_time live on the cats table). The full
+  // bio_profiles row — including every new column — is fetched below via *.
+  const cat = await db('bio_profiles')
+    .join('cats', 'cats.cat_pda', 'bio_profiles.cat_pda')
+    .where('bio_profiles.cat_pda', catPda)
     .first(
       'cats.cat_pda',
       'cats.owner_wallet',
       'cats.name',
       'cats.gender',
-      'cats.block_time',
-      'bio_profiles.breed',
-      'bio_profiles.coat_color',
-      'bio_profiles.coat_length',
-      'bio_profiles.eye_color',
-      'bio_profiles.ear_type',
-      'bio_profiles.body_size',
-      'bio_profiles.personality_trait',
-      'bio_profiles.description'
+      'cats.block_time'
     );
 
   if (!cat) return null;
+
+  // Pull every column from bio_profiles as its own row so we don't collide
+  // with the cats columns (cat_pda, id, timestamps) on a join.
+  const bioProfile = await db('bio_profiles')
+    .where({ cat_pda: catPda })
+    .first('*');
 
   const primaryImage = await db('cat_images')
     .where({ cat_pda: catPda })
     .orderBy('index', 'asc')
     .first('image_url');
 
+  cat.bio_profile = bioProfile || null;
   cat.image_url = primaryImage ? primaryImage.image_url : null;
   return cat;
 }
