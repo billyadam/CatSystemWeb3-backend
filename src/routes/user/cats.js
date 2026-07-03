@@ -1,7 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { upload } = require('../../middleware/upload');
-const { countByOwnerWallet } = require('../../repositories/catRepository');
+const { countByOwnerWallet, findByOwnerWallet, findByPda } = require('../../repositories/catRepository');
 const { getAllBreeds } = require('../../repositories/breedRepository');
 
 const router = express.Router();
@@ -21,6 +21,33 @@ router.get('/count', authMiddleware, async (req, res) => {
     return res.status(200).json({ count });
   } catch (err) {
     console.error('[cats] Error counting cats:', err.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /cats
+ *
+ * Lists the cats owned by the authenticated user, returning only the fields
+ * the cat-list card renders. Requires: Bearer token in Authorization header.
+ *
+ * Response 200:
+ *   { cats: [{ cat_pda, name, gender, breed, image_url, block_time }] }
+ */
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const rows = await findByOwnerWallet(req.user.wallet);
+    const cats = rows.map((c) => ({
+      cat_pda: c.cat_pda,
+      name: c.name,
+      gender: c.gender,
+      breed: c.breed || '',
+      image_url: c.image_url || null,
+      block_time: c.block_time != null ? Number(c.block_time) : null,
+    }));
+    return res.status(200).json({ cats });
+  } catch (err) {
+    console.error('[cats] Error listing cats:', err.message);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -59,6 +86,44 @@ router.post('/images', authMiddleware, upload.array('images', 10), (req, res) =>
   }));
 
   res.json({ images });
+});
+
+/**
+ * GET /cats/:pda
+ *
+ * Returns a single cat owned by the authenticated user, with the fields the
+ * individual cat page renders (header, DNA profile, bio, owner).
+ * Requires: Bearer token in Authorization header.
+ *
+ * Response 200: { cat: { cat_pda, owner_wallet, name, gender, image_url, block_time, bio_profile } }
+ * Response 404: cat not found
+ * Response 403: cat belongs to another owner
+ */
+router.get('/:pda', authMiddleware, async (req, res) => {
+  try {
+    const cat = await findByPda(req.params.pda);
+    if (!cat) {
+      return res.status(404).json({ message: 'Cat not found' });
+    }
+    if (cat.owner_wallet !== req.user.wallet) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    return res.status(200).json({
+      cat: {
+        cat_pda: cat.cat_pda,
+        owner_wallet: cat.owner_wallet,
+        name: cat.name,
+        gender: cat.gender,
+        image_url: cat.image_url || null,
+        block_time: cat.block_time != null ? Number(cat.block_time) : null,
+        bio_profile: cat.bio_profile,
+      },
+    });
+  } catch (err) {
+    console.error('[cats] Error fetching cat:', err.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 });
 
 router.use((err, _req, res, _next) => {
