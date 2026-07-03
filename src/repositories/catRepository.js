@@ -74,6 +74,12 @@ async function findByPda(catPda) {
     )
     .first();
 
+  if (row?.bio_profile?.body_size) {
+    row.bio_profile.body_size = row.bio_profile.body_size
+      .replace(/([A-Z])/g, ' $1')
+      .trim();
+  }
+
   return row ?? null;
 }
 
