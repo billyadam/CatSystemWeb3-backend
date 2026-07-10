@@ -94,7 +94,6 @@ router.post('/images', authMiddleware, upload.array('images', 10), (req, res) =>
  * Returns a single cat owned by the authenticated user, with the fields the
  * individual cat page renders (header, DNA profile, bio, owner).
  * Requires: Bearer token in Authorization header.
- *
  * Response 200: { cat: { cat_pda, owner_wallet, name, gender, image_url, block_time, bio_profile } }
  * Response 404: cat not found
  * Response 403: cat belongs to another owner
@@ -118,6 +117,10 @@ router.get('/:pda', authMiddleware, async (req, res) => {
         image_url: cat.image_url || null,
         block_time: cat.block_time != null ? Number(cat.block_time) : null,
         bio_profile: cat.bio_profile,
+        images: (cat.images || []).map((img) => ({
+          url: img.image_url,
+          description: img.description || null,
+        })),
       },
     });
   } catch (err) {
