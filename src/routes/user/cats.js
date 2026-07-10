@@ -1,6 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth');
-const { upload } = require('../../middleware/upload');
+const { uploadCatImage } = require('../../services/uploadCatImage');
 const { countByOwnerWallet, findByOwnerWallet, findByPda } = require('../../repositories/catRepository');
 const { getAllBreeds } = require('../../repositories/breedRepository');
 
@@ -75,7 +75,7 @@ router.get('/breeds', async (req, res) => {
  * Multipart body: `images` (file) × 1-10
  * Returns: { images: [{ url, filename }] }
  */
-router.post('/images', authMiddleware, upload.array('images', 10), (req, res) => {
+router.post('/images', authMiddleware, uploadCatImage.array('images', 10), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ message: 'At least 1 image is required' });
   }

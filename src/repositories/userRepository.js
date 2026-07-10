@@ -31,7 +31,32 @@ async function insertOnboarding(walletAddress, { name, bio }) {
   return user;
 }
 
+/**
+ * Update user profile details (name, bio).
+ * @param {string} walletAddress 
+ * @param {{ name: string, bio?: string }} data 
+ * @returns {Promise<object>}
+ */
+async function updateProfile(walletAddress, { name, bio }) {
+  const [user] = await db('users')
+    .where({ wallet_address: walletAddress })
+    .update({ name, bio })
+    .returning('*');
+  return user;
+}
 
+/**
+ * Update user profile picture URL.
+ * @param {string} walletAddress 
+ * @param {string} profilePictureUrl 
+ * @returns {Promise<object>}
+ */
+async function updateProfilePicture(walletAddress, profilePictureUrl) {
+  const [user] = await db('users')
+    .where({ wallet_address: walletAddress })
+    .update({ profile_picture_url: profilePictureUrl })
+    .returning('*');
+  return user;
+}
 
-module.exports = { findByWallet, insertOnboarding };
-
+module.exports = { findByWallet, insertOnboarding, updateProfile, updateProfilePicture };

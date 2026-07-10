@@ -26,10 +26,10 @@ function fileFilter(_req, file, cb) {
   cb(null, true);
 }
 
-const upload = multer({
+const uploadCatImage = multer({
   storage,
   fileFilter,
   limits: { fileSize: MAX_FILE_SIZE, files: MAX_FILES },
 });
 
-module.exports = { upload, UPLOAD_DIR };
+module.exports = { uploadCatImage, UPLOAD_DIR };

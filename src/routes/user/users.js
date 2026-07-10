@@ -1,9 +1,9 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { uploadPdf } = require('../../services/uploadPdf');
-const { findByWallet, insertOnboarding } = require('../../repositories/userRepository');
+const { uploadProfile } = require('../../services/uploadProfile');
+const { findByWallet, insertOnboarding, updateProfile, updateProfilePicture } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
-
 const router = express.Router();
 
 // POST /users/onboard
@@ -89,6 +89,66 @@ router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), as
     });
   } catch (err) {
     console.error('[users] Error creating breeder request:', err.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /users/profile
+ * Update user text profile.
+ */
+router.put('/profile', authMiddleware, async (req, res) => {
+  const { name, bio } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ message: 'Name is required' });
+  }
+
+  try {
+    const user = await updateProfile(req.user.wallet, {
+      name: name.trim(),
+      bio: bio?.trim() ?? null,
+    });
+    
+    if (!user) {
+       return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      message: 'Profile updated successfully',
+      user: {
+        wallet_address: user.wallet_address,
+        name: user.name,
+        bio: user.bio,
+        profile_picture_url: user.profile_picture_url,
+      },
+    });
+  } catch (err) {
+    console.error('[users] Error updating profile:', err.message);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /users/profile-picture
+ * Update user profile picture.
+ */
+router.post('/profile-picture', authMiddleware, uploadProfile.single('photo'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'A valid photo image is required.' });
+  }
+
+  const pictureUrl = `/uploads/users/${req.file.filename}`;
+
+  try {
+    await updateProfilePicture(req.user.wallet, pictureUrl);
+    
+    return res.status(200).json({
+      message: 'Profile picture updated successfully',
+      profile_picture_url: pictureUrl,
+    });
+  } catch (err) {
+    console.error('[users] Error updating profile picture:', err.message);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
