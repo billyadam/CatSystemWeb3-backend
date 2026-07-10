@@ -53,15 +53,9 @@ async function findByOwnerWallet(ownerWallet) {
  *   itself is not found.
  */
 async function findByPda(catPda) {
+  // Main cat row — no image join here; images fetched separately below
   const row = await db('cats')
     .join('bio_profiles', 'cats.cat_pda', 'bio_profiles.cat_pda')
-    .leftJoin('cat_images', function joinPrimaryImage() {
-      this.on('cat_images.cat_pda', '=', 'cats.cat_pda').andOn(
-        'cat_images.index',
-        '=',
-        db.raw('0')
-      );
-    })
     .where('cats.cat_pda', catPda)
     .select(
       'cats.cat_pda',
@@ -69,18 +63,30 @@ async function findByPda(catPda) {
       'cats.name',
       'cats.gender',
       'cats.block_time',
-      'cat_images.image_url',
       db.raw('row_to_json(bio_profiles.*) as bio_profile')
     )
     .first();
 
-  if (row?.bio_profile?.body_size) {
+  if (!row) return null;
+
+  if (row.bio_profile?.body_size) {
     row.bio_profile.body_size = row.bio_profile.body_size
       .replace(/([A-Z])/g, ' $1')
       .trim();
   }
 
-  return row ?? null;
+  // Fetch ALL images for this cat, ordered by their on-chain index
+  const images = await db('cat_images')
+    .where({ cat_pda: catPda })
+    .orderBy('index', 'asc')
+    .select('image_url', 'description', 'index');
+
+  row.images = images;
+
+  // Keep image_url pointing to the first photo (index 0) for backward compat
+  row.image_url = images.length > 0 ? images[0].image_url : null;
+
+  return row;
 }
 
 module.exports = { countByOwnerWallet, findByOwnerWallet, findByPda };
