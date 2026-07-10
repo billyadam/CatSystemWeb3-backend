@@ -1,7 +1,7 @@
 const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { uploadPdf } = require('../../services/uploadPdf');
-const { uploadProfile } = require('../../middleware/uploadProfile');
+const { uploadProfile } = require('../../services/uploadProfile');
 const { findByWallet, insertOnboarding, updateProfile, updateProfilePicture } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
 const router = express.Router();
