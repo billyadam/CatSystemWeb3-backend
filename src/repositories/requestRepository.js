@@ -1,31 +1,31 @@
 const db = require('../database/knex');
 
 const baseQuery = () =>
-  db('requests')
-    .leftJoin('users', 'requests.user_wallet', 'users.wallet_address')
-    .leftJoin('admins as approver', 'requests.approved_by', 'approver.wallet_address')
-    .leftJoin('admins as rejecter', 'requests.rejected_by', 'rejecter.wallet_address')
+  db('request_breeders')
+    .leftJoin('users', 'request_breeders.user_wallet', 'users.wallet_address')
+    .leftJoin('admins as approver', 'request_breeders.approved_by', 'approver.wallet_address')
+    .leftJoin('admins as rejecter', 'request_breeders.rejected_by', 'rejecter.wallet_address')
     .select(
-      'requests.*',
+      'request_breeders.*',
       'users.name as user_name',
       'approver.name as approved_by_name',
       'rejecter.name as rejected_by_name'
     )
-    .orderBy('requests.requested_at', 'desc');
+    .orderBy('request_breeders.requested_at', 'desc');
 
 async function findAll() {
   return await baseQuery();
 }
 
 async function findByStatus(status) {
-  return await baseQuery().where({ 'requests.status': status });
+  return await baseQuery().where({ 'request_breeders.status': status });
 }
 
 /**
  * Find a request by ID.
 */
 async function findRequestById(id) {
-    const request = await db('requests').where({ id }).first();
+    const request = await db('request_breeders').where({ id }).first();
     return request || null;
 }
 
@@ -35,11 +35,11 @@ async function findRequestById(id) {
  */
 async function rejectRequest(requestId, adminWallet) {
   const updated = await db.transaction(async (trx) => {
-    const request = await trx('requests').where({ id: requestId }).forUpdate().first();
+    const request = await trx('request_breeders').where({ id: requestId }).forUpdate().first();
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('Request is not pending');
 
-    const [result] = await trx('requests')
+    const [result] = await trx('request_breeders')
       .where({ id: requestId })
       .update({
         rejected_by: adminWallet,
@@ -65,11 +65,11 @@ async function rejectRequest(requestId, adminWallet) {
 async function approveRequest(requestId, adminWallet) {
   const result = await db.transaction(async (trx) => {
     // 1. Update request
-    const request = await trx('requests').where({ id: requestId }).forUpdate().first();
+    const request = await trx('request_breeders').where({ id: requestId }).forUpdate().first();
     if (!request) throw new Error('Request not found');
     if (request.status !== 'pending') throw new Error('Request is not pending');
 
-    const [updatedRequest] = await trx('requests')
+    const [updatedRequest] = await trx('request_breeders')
       .where({ id: requestId })
       .update({
         approved_by: adminWallet,
@@ -102,7 +102,7 @@ async function approveRequest(requestId, adminWallet) {
  * @returns {Promise<object|null>}
  */
 async function findActiveRequestByWallet(userWallet) {
-  return db('requests')
+  return db('request_breeders')
     .where({ user_wallet: userWallet })
     .whereIn('status', ['pending', 'approved'])
     .first();
@@ -115,7 +115,7 @@ async function findActiveRequestByWallet(userWallet) {
  * @returns {Promise<object>} the inserted row
  */
 async function createBreederRequest(userWallet, documentUrl = null) {
-  const [row] = await db('requests')
+  const [row] = await db('request_breeders')
     .insert({
       user_wallet: userWallet,
       status: 'pending',
