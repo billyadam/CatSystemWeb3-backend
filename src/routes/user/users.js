@@ -2,8 +2,12 @@ const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { uploadPdf } = require('../../services/uploadPdf');
 const { uploadProfile } = require('../../services/uploadProfile');
-const { findByWallet, insertOnboarding, updateProfile, updateProfilePicture } = require('../../repositories/userRepository');
+const { findByWallet, insertOnboarding, updateProfileBio, updateProfilePicture } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
+const {
+  ProfileUpdateError,
+  submitProfileUpdateRequest,
+} = require('../../services/profileUpdateService');
 const router = express.Router();
 
 // POST /users/onboard
@@ -118,23 +122,17 @@ router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), as
 
 /**
  * PUT /users/profile
- * Update user text profile.
+ * Update user bio directly (no approval needed).
+ * Body: { bio }
  */
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { name, bio } = req.body;
-
-  if (!name) {
-    return res.status(400).json({ message: 'Name is required' });
-  }
+  const { bio } = req.body;
 
   try {
-    const user = await updateProfile(req.user.wallet, {
-      name: name.trim(),
-      bio: bio?.trim() ?? null,
-    });
-    
+    const user = await updateProfileBio(req.user.wallet, bio?.trim() ?? null);
+
     if (!user) {
-       return res.status(404).json({ message: 'User not found' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
     return res.status(200).json({
@@ -149,6 +147,44 @@ router.put('/profile', authMiddleware, async (req, res) => {
   } catch (err) {
     console.error('[users] Error updating profile:', err.message);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /users/profile-update-request
+ * Submit a request to change approval-gated profile fields
+ * (name, phone_number, email, country, city). The user is NOT changed until
+ * an admin approves the request.
+ * Body: { name?, phone_number?, email?, country?, city? }
+ */
+router.post('/profile-update-request', authMiddleware, async (req, res) => {
+  try {
+    const request = await submitProfileUpdateRequest(req.user.wallet, req.body);
+
+    return res.status(201).json({
+      message: 'Profile update request submitted, waiting for admin approval',
+      request,
+    });
+  } catch (err) {
+    switch (err.message) {
+      case ProfileUpdateError.NO_FIELDS:
+        return res.status(400).json({
+          message: 'At least one of name, phone_number, email, country, city is required',
+        });
+      case ProfileUpdateError.NO_CHANGES:
+        return res.status(400).json({ message: 'No changes detected' });
+      case ProfileUpdateError.INVALID_EMAIL:
+        return res.status(400).json({ message: 'Invalid email format' });
+      case ProfileUpdateError.USER_NOT_FOUND:
+        return res.status(404).json({ message: 'User not found' });
+      case ProfileUpdateError.PENDING_REQUEST_EXISTS:
+        return res.status(409).json({
+          message: 'You already have a pending profile update request',
+        });
+      default:
+        console.error('[users] Error creating profile update request:', err.message);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
   }
 });
 
