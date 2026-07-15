@@ -7,14 +7,27 @@ const { findActiveRequestByWallet, createBreederRequest } = require('../../repos
 const router = express.Router();
 
 // POST /users/onboard
-// Body: { name: string, bio?: string }
+// Body: { name, bio?, email, phone_number?, city, country, birthdate }
 // Requires: Bearer token (authMiddleware)
 router.post('/onboard', authMiddleware, async (req, res) => {
-  const { name, bio } = req.body;
+  const { name, bio, email, phone_number, city, country, birthdate } = req.body;
 
-  // Validate: name are required and must not be whitespace-only
-  if (!name) {
-    return res.status(400).json({ message: 'name are required' });
+  // Required fields
+  if (!name || !email || !city || !country || !birthdate) {
+    return res.status(400).json({
+      message: 'name, email, city, country, and birthdate are required',
+    });
+  }
+
+  // Basic email format validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ message: 'Invalid email format' });
+  }
+
+  // birthdate must be a valid date (YYYY-MM-DD)
+  if (isNaN(Date.parse(birthdate))) {
+    return res.status(400).json({ message: 'birthdate must be a valid date (YYYY-MM-DD)' });
   }
 
   let user;
@@ -22,6 +35,11 @@ router.post('/onboard', authMiddleware, async (req, res) => {
     user = await insertOnboarding(req.user.wallet, {
       name: name.trim(),
       bio: bio?.trim() ?? null,
+      email: email.trim().toLowerCase(),
+      phone_number: phone_number?.trim() ?? null,
+      city: city.trim(),
+      country: country.trim(),
+      birthdate,
     });
   } catch (err) {
     console.error('[users] Database error:', err.message);
@@ -32,6 +50,11 @@ router.post('/onboard', authMiddleware, async (req, res) => {
     wallet: user.wallet_address,
     name: user.name,
     bio: user.bio,
+    email: user.email,
+    phone_number: user.phone_number,
+    city: user.city,
+    country: user.country,
+    birthdate: user.birthdate,
     onboarded: true,
   });
 });

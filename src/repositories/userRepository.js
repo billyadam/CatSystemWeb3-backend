@@ -18,15 +18,23 @@ async function findByWallet(walletAddress) {
 // }
 
 /**
- * Update onboarding data (name, bio, username) for a user.
- * Idempotent: calling multiple times with the same data produces identical state.
+ * Insert onboarding data for a user.
  * @param {string} walletAddress
- * @param {{ name: string, bio?: string }} data
+ * @param {{ name: string, bio?: string, email: string, phone_number?: string, city: string, country: string, birthdate: string }} data
  * @returns {Promise<object>} the updated user object
  */
-async function insertOnboarding(walletAddress, { name, bio }) {
+async function insertOnboarding(walletAddress, { name, bio, email, phone_number, city, country, birthdate }) {
   const [user] = await db('users')
-    .insert({ name, bio, wallet_address: walletAddress })
+    .insert({
+      wallet_address: walletAddress,
+      name,
+      bio: bio ?? null,
+      email,
+      phone_number: phone_number ?? null,
+      city,
+      country,
+      birthdate,
+    })
     .returning('*');
   return user;
 }
