@@ -3,8 +3,6 @@ const {
   APPROVAL_FIELDS,
   findActivePendingProfileUpdate,
   createProfileUpdateRequest,
-  approveProfileUpdate,
-  rejectProfileUpdate,
 } = require('../repositories/userRepository');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -89,23 +87,7 @@ async function submitProfileUpdateRequest(walletAddress, payload) {
   return createProfileUpdateRequest(walletAddress, oldValues, newValues);
 }
 
-/**
- * Approve a pending profile update request (admin action).
- */
-async function approveProfileUpdateRequest(requestId, adminWallet) {
-  return approveProfileUpdate(requestId, adminWallet);
-}
-
-/**
- * Reject a pending profile update request (admin action).
- */
-async function rejectProfileUpdateRequest(requestId, adminWallet) {
-  return rejectProfileUpdate(requestId, adminWallet);
-}
-
 module.exports = {
   ProfileUpdateError,
   submitProfileUpdateRequest,
-  approveProfileUpdateRequest,
-  rejectProfileUpdateRequest,
 };
