@@ -7,7 +7,7 @@ const { findActiveRequestByWallet, createBreederRequest } = require('../../repos
 const {
   ProfileUpdateError,
   submitProfileUpdateRequest,
-} = require('../../services/profileUpdateService');
+} = require('../../services/profileUpdateRequest');
 const router = express.Router();
 
 // POST /users/onboard
