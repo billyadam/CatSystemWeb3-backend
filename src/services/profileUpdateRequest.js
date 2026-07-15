@@ -1,6 +1,7 @@
+const db = require('../database/knex');
 const {
-  findByWallet,
   APPROVAL_FIELDS,
+  findByWalletForUpdate,
   findActivePendingProfileUpdate,
   createProfileUpdateRequest,
 } = require('../repositories/userRepository');
@@ -52,6 +53,7 @@ function normalizePayload(payload = {}) {
 async function submitProfileUpdateRequest(walletAddress, payload) {
   const requested = normalizePayload(payload);
 
+  // Validasi murni (tanpa DB) → gagal cepat sebelum membuka transaksi.
   if (Object.keys(requested).length === 0) {
     throw new Error(ProfileUpdateError.NO_FIELDS);
   }
@@ -60,31 +62,35 @@ async function submitProfileUpdateRequest(walletAddress, payload) {
     throw new Error(ProfileUpdateError.INVALID_EMAIL);
   }
 
-  const user = await findByWallet(walletAddress);
-  if (!user) {
-    throw new Error(ProfileUpdateError.USER_NOT_FOUND);
-  }
+  // Transaction block: kunci baris user, cek duplikat, dan insert secara atomik.
+  // Dua request paralel dari user yang sama akan diserialkan oleh lock ini.
+  return db.transaction(async (trx) => {
+    const user = await findByWalletForUpdate(walletAddress, trx);
+    if (!user) {
+      throw new Error(ProfileUpdateError.USER_NOT_FOUND);
+    }
 
-  // Keep only fields whose value actually differs from the current user value.
-  const oldValues = {};
-  const newValues = {};
-  for (const [field, value] of Object.entries(requested)) {
-    const current = user[field] ?? null;
-    if (current === value) continue;
-    oldValues[field] = current;
-    newValues[field] = value;
-  }
+    // Keep only fields whose value actually differs from the current user value.
+    const oldValues = {};
+    const newValues = {};
+    for (const [field, value] of Object.entries(requested)) {
+      const current = user[field] ?? null;
+      if (current === value) continue;
+      oldValues[field] = current;
+      newValues[field] = value;
+    }
 
-  if (Object.keys(newValues).length === 0) {
-    throw new Error(ProfileUpdateError.NO_CHANGES);
-  }
+    if (Object.keys(newValues).length === 0) {
+      throw new Error(ProfileUpdateError.NO_CHANGES);
+    }
 
-  const existing = await findActivePendingProfileUpdate(walletAddress);
-  if (existing) {
-    throw new Error(ProfileUpdateError.PENDING_REQUEST_EXISTS);
-  }
+    const existing = await findActivePendingProfileUpdate(walletAddress, trx);
+    if (existing) {
+      throw new Error(ProfileUpdateError.PENDING_REQUEST_EXISTS);
+    }
 
-  return createProfileUpdateRequest(walletAddress, oldValues, newValues);
+    return createProfileUpdateRequest(walletAddress, oldValues, newValues, trx);
+  });
 }
 
 module.exports = {

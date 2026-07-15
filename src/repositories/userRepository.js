@@ -77,13 +77,30 @@ async function updateProfilePicture(walletAddress, profilePictureUrl) {
 const APPROVAL_FIELDS = ['name', 'phone_number', 'email', 'country', 'city'];
 
 /**
+ * Find a user by wallet and lock the row for the duration of a transaction.
+ * Used to take a consistent "before" snapshot and serialize concurrent
+ * requests from the same user.
+ * @param {string} walletAddress
+ * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
+ * @returns {Promise<object|null>}
+ */
+async function findByWalletForUpdate(walletAddress, trx = db) {
+  const user = await trx('users')
+    .where({ wallet_address: walletAddress })
+    .forUpdate()
+    .first();
+  return user || null;
+}
+
+/**
  * Find an existing pending profile update request for a wallet.
  * Used to prevent duplicate pending requests.
  * @param {string} userWallet
+ * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
  * @returns {Promise<object|null>}
  */
-async function findActivePendingProfileUpdate(userWallet) {
-  const row = await db('request_profile_updates')
+async function findActivePendingProfileUpdate(userWallet, trx = db) {
+  const row = await trx('request_profile_updates')
     .where({ user_wallet: userWallet, status: 'pending' })
     .first();
   return row || null;
@@ -94,9 +111,10 @@ async function findActivePendingProfileUpdate(userWallet) {
  * @param {string} userWallet
  * @param {object} oldValues subset of APPROVAL_FIELDS with current values
  * @param {object} newValues subset of APPROVAL_FIELDS with requested values
+ * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
  * @returns {Promise<object>} the inserted row
  */
-async function createProfileUpdateRequest(userWallet, oldValues, newValues) {
+async function createProfileUpdateRequest(userWallet, oldValues, newValues, trx = db) {
   const insertData = {
     user_wallet: userWallet,
     status: 'pending',
@@ -107,7 +125,7 @@ async function createProfileUpdateRequest(userWallet, oldValues, newValues) {
     insertData[`${field}_new`] = newValues[field] ?? null;
   }
 
-  const [row] = await db('request_profile_updates').insert(insertData).returning('*');
+  const [row] = await trx('request_profile_updates').insert(insertData).returning('*');
   return row;
 }
 
@@ -117,6 +135,7 @@ module.exports = {
   updateProfileBio,
   updateProfilePicture,
   APPROVAL_FIELDS,
+  findByWalletForUpdate,
   findActivePendingProfileUpdate,
   createProfileUpdateRequest,
 };
