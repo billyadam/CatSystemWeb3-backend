@@ -2,7 +2,7 @@ const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { uploadPdf } = require('../../services/uploadPdf');
 const { uploadProfile } = require('../../services/uploadProfile');
-const { findByWallet, insertOnboarding, updateProfileBio, updateProfilePicture } = require('../../repositories/userRepository');
+const { findByWallet, insertOnboarding, updateProfile, updateProfilePicture } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
 const {
   ProfileUpdateError,
@@ -122,69 +122,65 @@ router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), as
 
 /**
  * PUT /users/profile
- * Update user bio directly (no approval needed).
- * Body: { bio }
+ * Update user profile.
+ *
+ * Body: { name?, bio?, phone_number?, email?, country?, city? }
+ *
+ * Aturan:
+ *   - `name` & `bio`  → langsung mengganti data user.
+ *   - `phone_number`, `email`, `country`, `city`
+ *        → JIKA berubah, dibuatkan request pending (menunggu persetujuan admin).
  */
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { bio } = req.body;
+  const { name, bio } = req.body;
 
   try {
-    const user = await updateProfileBio(req.user.wallet, bio?.trim() ?? null);
+    // 1. Update name + bio secara langsung.
+    const user = await updateProfile(req.user.wallet, {
+      name: name?.trim(),
+      bio: bio?.trim() ?? null,
+    });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // 2. Untuk phone_number/email/country/city → buat request pending JIKA berubah.
+    let pendingRequest = null;
+    try {
+      pendingRequest = await submitProfileUpdateRequest(req.user.wallet, req.body);
+    } catch (err) {
+      switch (err.message) {
+        // Tidak ada field approval yang dikirim / tidak ada yang berubah → wajar, abaikan.
+        case ProfileUpdateError.NO_FIELDS:
+        case ProfileUpdateError.NO_CHANGES:
+          break;
+        case ProfileUpdateError.INVALID_EMAIL:
+          return res.status(400).json({ message: 'Invalid email format' });
+        case ProfileUpdateError.PENDING_REQUEST_EXISTS:
+          return res.status(409).json({
+            message: 'You already have a pending profile update request',
+          });
+        default:
+          throw err;
+      }
+    }
+
     return res.status(200).json({
-      message: 'Profile updated successfully',
+      message: pendingRequest
+        ? 'Profile updated. Some changes are waiting for admin approval.'
+        : 'Profile updated successfully',
       user: {
         wallet_address: user.wallet_address,
         name: user.name,
         bio: user.bio,
         profile_picture_url: user.profile_picture_url,
       },
+      pendingRequest,
     });
   } catch (err) {
     console.error('[users] Error updating profile:', err.message);
     return res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-/**
- * POST /users/profile-update-request
- * Submit a request to change approval-gated profile fields
- * (name, phone_number, email, country, city). The user is NOT changed until
- * an admin approves the request.
- * Body: { name?, phone_number?, email?, country?, city? }
- */
-router.post('/profile-update-request', authMiddleware, async (req, res) => {
-  try {
-    const request = await submitProfileUpdateRequest(req.user.wallet, req.body);
-
-    return res.status(201).json({
-      message: 'Profile update request submitted, waiting for admin approval',
-      request,
-    });
-  } catch (err) {
-    switch (err.message) {
-      case ProfileUpdateError.NO_FIELDS:
-        return res.status(400).json({
-          message: 'At least one of name, phone_number, email, country, city is required',
-        });
-      case ProfileUpdateError.NO_CHANGES:
-        return res.status(400).json({ message: 'No changes detected' });
-      case ProfileUpdateError.INVALID_EMAIL:
-        return res.status(400).json({ message: 'Invalid email format' });
-      case ProfileUpdateError.USER_NOT_FOUND:
-        return res.status(404).json({ message: 'User not found' });
-      case ProfileUpdateError.PENDING_REQUEST_EXISTS:
-        return res.status(409).json({
-          message: 'You already have a pending profile update request',
-        });
-      default:
-        console.error('[users] Error creating profile update request:', err.message);
-        return res.status(500).json({ message: 'Internal server error' });
-    }
   }
 });
 
