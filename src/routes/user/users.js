@@ -2,7 +2,7 @@ const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { uploadPdf } = require('../../services/uploadPdf');
 const { uploadProfile } = require('../../services/uploadProfile');
-const { findByWallet, insertOnboarding, updateProfile, updateProfilePicture } = require('../../repositories/userRepository');
+const { findByWallet, insertOnboarding, updateProfileBio, updateProfilePicture } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
 const {
   ProfileUpdateError,
@@ -124,28 +124,25 @@ router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), as
  * PUT /users/profile
  * Update user profile.
  *
- * Body: { name?, bio?, phone_number?, email?, country?, city? }
+ * Body: { bio?, name?, phone_number?, email?, country?, city? }
  *
  * Aturan:
- *   - `name` & `bio`  → langsung mengganti data user.
- *   - `phone_number`, `email`, `country`, `city`
+ *   - `bio`  → langsung mengganti data user.
+ *   - `name`, `phone_number`, `email`, `country`, `city`
  *        → JIKA berubah, dibuatkan request pending (menunggu persetujuan admin).
  */
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { name, bio } = req.body;
+  const { bio } = req.body;
 
   try {
-    // 1. Update name + bio secara langsung.
-    const user = await updateProfile(req.user.wallet, {
-      name: name?.trim(),
-      bio: bio?.trim() ?? null,
-    });
+    // 1. Update bio secara langsung.
+    const user = await updateProfileBio(req.user.wallet, bio?.trim() ?? null);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // 2. Untuk phone_number/email/country/city → buat request pending JIKA berubah.
+    // 2. Untuk name/phone_number/email/country/city → buat request pending JIKA berubah.
     let pendingRequest = null;
     try {
       pendingRequest = await submitProfileUpdateRequest(req.user.wallet, req.body);
