@@ -40,23 +40,24 @@ async function insertOnboarding(walletAddress, { name, bio, email, phone_number,
 }
 
 /**
- * Update user profile details (name, bio).
- * @param {string} walletAddress 
- * @param {{ name: string, bio?: string }} data 
+ * Update user bio directly (no approval needed).
+ * @param {string} walletAddress
+ * @param {string|null} bio
+ * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
  * @returns {Promise<object>}
  */
-async function updateProfile(walletAddress, { name, bio }) {
-  const [user] = await db('users')
+async function updateProfileBio(walletAddress, bio, trx = db) {
+  const [user] = await trx('users')
     .where({ wallet_address: walletAddress })
-    .update({ name, bio })
+    .update({ bio })
     .returning('*');
   return user;
 }
 
 /**
  * Update user profile picture URL.
- * @param {string} walletAddress 
- * @param {string} profilePictureUrl 
+ * @param {string} walletAddress
+ * @param {string} profilePictureUrl
  * @returns {Promise<object>}
  */
 async function updateProfilePicture(walletAddress, profilePictureUrl) {
@@ -67,4 +68,26 @@ async function updateProfilePicture(walletAddress, profilePictureUrl) {
   return user;
 }
 
-module.exports = { findByWallet, insertOnboarding, updateProfile, updateProfilePicture };
+/**
+ * Find a user by wallet and lock the row for the duration of a transaction.
+ * Used to take a consistent "before" snapshot and serialize concurrent
+ * requests from the same user.
+ * @param {string} walletAddress
+ * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
+ * @returns {Promise<object|null>}
+ */
+async function findByWalletForUpdate(walletAddress, trx = db) {
+  const user = await trx('users')
+    .where({ wallet_address: walletAddress })
+    .forUpdate()
+    .first();
+  return user || null;
+}
+
+module.exports = {
+  findByWallet,
+  insertOnboarding,
+  updateProfileBio,
+  updateProfilePicture,
+  findByWalletForUpdate,
+};

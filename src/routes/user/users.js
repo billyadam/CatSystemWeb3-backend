@@ -2,8 +2,12 @@ const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { uploadPdf } = require('../../services/uploadPdf');
 const { uploadProfile } = require('../../services/uploadProfile');
-const { findByWallet, insertOnboarding, updateProfile, updateProfilePicture } = require('../../repositories/userRepository');
+const { findByWallet, insertOnboarding, updateProfilePicture } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
+const {
+  ProfileUpdateError,
+  submitProfileUpdateRequest,
+} = require('../../services/profileUpdateRequest');
 const router = express.Router();
 
 // POST /users/onboard
@@ -118,37 +122,42 @@ router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), as
 
 /**
  * PUT /users/profile
- * Update user text profile.
+ * Update user profile.
+ *
+ * Body: { bio?, name?, phone_number?, email?, country?, city? }
  */
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { name, bio } = req.body;
-
-  if (!name) {
-    return res.status(400).json({ message: 'Name is required' });
-  }
-
   try {
-    const user = await updateProfile(req.user.wallet, {
-      name: name.trim(),
-      bio: bio?.trim() ?? null,
-    });
-    
-    if (!user) {
-       return res.status(404).json({ message: 'User not found' });
-    }
+    const { user, pendingRequest } = await submitProfileUpdateRequest(req.user.wallet, req.body);
 
     return res.status(200).json({
-      message: 'Profile updated successfully',
+      message: pendingRequest
+        ? 'Profile updated. Some changes are waiting for admin approval.'
+        : 'Profile updated successfully',
       user: {
         wallet_address: user.wallet_address,
         name: user.name,
         bio: user.bio,
         profile_picture_url: user.profile_picture_url,
       },
+      pendingRequest,
     });
   } catch (err) {
-    console.error('[users] Error updating profile:', err.message);
-    return res.status(500).json({ message: 'Internal server error' });
+    switch (err.message) {
+      case ProfileUpdateError.NO_FIELDS:
+        return res.status(400).json({ message: 'No fields to update' });
+      case ProfileUpdateError.INVALID_EMAIL:
+        return res.status(400).json({ message: 'Invalid email format' });
+      case ProfileUpdateError.USER_NOT_FOUND:
+        return res.status(404).json({ message: 'User not found' });
+      case ProfileUpdateError.PENDING_REQUEST_EXISTS:
+        return res.status(409).json({
+          message: 'You already have a pending profile update request',
+        });
+      default:
+        console.error('[users] Error updating profile:', err.message);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
   }
 });
 
