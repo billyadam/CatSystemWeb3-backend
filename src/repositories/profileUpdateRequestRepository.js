@@ -60,7 +60,103 @@ async function findById(id) {
   return row || null;
 }
 
+/**
+ * Approve a profile update request and apply the new profile fields to the user.
+ * Runs inside a transaction to ensure atomicity.
+ * @param {number|string} id           - request_profile_updates.id
+ * @param {string} adminWallet         - wallet address of the approving admin
+ * @returns {Promise<object>}          - the updated request row
+ */
+async function approveProfileUpdateRequest(id, adminWallet) {
+  return db.transaction(async (trx) => {
+    // 1. Lock and fetch the request
+    const request = await trx('request_profile_updates')
+      .where({ id })
+      .first();
+
+    if (!request) {
+      const err = new Error('Profile update request not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (request.status !== 'pending') {
+      const err = new Error(`Request is already ${request.status}`);
+      err.statusCode = 409;
+      throw err;
+    }
+
+    // 2. Mark the request as approved
+    const [updated] = await trx('request_profile_updates')
+      .where({ id })
+      .update({
+        status: 'approved',
+        approved_by: adminWallet,
+        approved_at: new Date(),
+      })
+      .returning('*');
+
+    // 3. Apply the new profile fields to the user
+    const profilePatch = {};
+    if (request.name_new        !== null) profilePatch.name         = request.name_new;
+    if (request.email_new       !== null) profilePatch.email        = request.email_new;
+    if (request.phone_number_new !== null) profilePatch.phone_number = request.phone_number_new;
+    if (request.city_new        !== null) profilePatch.city         = request.city_new;
+    if (request.country_new     !== null) profilePatch.country      = request.country_new;
+
+    if (Object.keys(profilePatch).length > 0) {
+      await trx('users')
+        .where({ wallet_address: request.user_wallet })
+        .update(profilePatch);
+    }
+
+    return updated;
+  });
+}
+
+/**
+ * Reject a profile update request. The user's profile is NOT modified.
+ * Runs inside a transaction for consistency.
+ * @param {number|string} id           - request_profile_updates.id
+ * @param {string} adminWallet         - wallet address of the rejecting admin
+ * @returns {Promise<object>}          - the updated request row
+ */
+async function rejectProfileUpdateRequest(id, adminWallet) {
+  return db.transaction(async (trx) => {
+    // 1. Lock and fetch the request
+    const request = await trx('request_profile_updates')
+      .where({ id })
+      .first();
+
+    if (!request) {
+      const err = new Error('Profile update request not found');
+      err.statusCode = 404;
+      throw err;
+    }
+
+    if (request.status !== 'pending') {
+      const err = new Error(`Request is already ${request.status}`);
+      err.statusCode = 409;
+      throw err;
+    }
+
+    // 2. Mark the request as rejected (profile stays unchanged)
+    const [updated] = await trx('request_profile_updates')
+      .where({ id })
+      .update({
+        status: 'rejected',
+        rejected_by: adminWallet,
+        rejected_at: new Date(),
+      })
+      .returning('*');
+
+    return updated;
+  });
+}
+
 module.exports = {
   findAll,
   findById,
+  approveProfileUpdateRequest,
+  rejectProfileUpdateRequest,
 };
