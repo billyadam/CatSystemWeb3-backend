@@ -1,12 +1,16 @@
 const db = require('../database/knex');
 const {
-  APPROVAL_FIELDS,
   findByWalletForUpdate,
+  updateProfileBio,
+} = require('../repositories/userRepository');
+const {
   findActivePendingProfileUpdate,
   createProfileUpdateRequest,
-} = require('../repositories/userRepository');
+} = require('../repositories/profileUpdateRequestRepository');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const APPROVAL_FIELDS = ['name', 'phone_number', 'email', 'country', 'city'];
 
 /**
  * Domain errors thrown by this service. Route layer maps these to HTTP status.
@@ -14,7 +18,6 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ProfileUpdateError = {
   USER_NOT_FOUND: 'USER_NOT_FOUND',
   NO_FIELDS: 'NO_FIELDS',
-  NO_CHANGES: 'NO_CHANGES',
   INVALID_EMAIL: 'INVALID_EMAIL',
   PENDING_REQUEST_EXISTS: 'PENDING_REQUEST_EXISTS',
 };
@@ -39,22 +42,24 @@ function normalizePayload(payload = {}) {
 }
 
 /**
- * Submit a profile update request for approval-gated fields
- * (name, phone_number, email, country, city).
- *
- * Stores before/after values in `request_profile_updates` with status pending.
- * Does NOT change the user directly.
+ * Update profil user dalam satu transaksi:
+ *   - `bio`  → langsung mengganti data user.
+ *   - `name`, `phone_number`, `email`, `country`, `city`
+ *        → JIKA berubah, dibuatkan baris `request_profile_updates` (pending),
+ *          menyimpan nilai sebelum (`*_old`) & sesudah (`*_new`).
  *
  * @param {string} walletAddress
- * @param {object} payload raw request body
- * @returns {Promise<object>} the created request row
+ * @param {object} payload raw request body { bio?, name?, phone_number?, email?, country?, city? }
+ * @returns {Promise<{ user: object, pendingRequest: object|null }>}
  * @throws {Error} with message from ProfileUpdateError
  */
-async function submitProfileUpdateRequest(walletAddress, payload) {
+async function submitProfileUpdateRequest(walletAddress, payload = {}) {
   const requested = normalizePayload(payload);
+  const bioProvided = payload.bio !== undefined;
+  const bioValue = bioProvided ? (payload.bio?.trim() ?? null) : undefined;
 
   // Validasi murni (tanpa DB) → gagal cepat sebelum membuka transaksi.
-  if (Object.keys(requested).length === 0) {
+  if (!bioProvided && Object.keys(requested).length === 0) {
     throw new Error(ProfileUpdateError.NO_FIELDS);
   }
 
@@ -62,15 +67,21 @@ async function submitProfileUpdateRequest(walletAddress, payload) {
     throw new Error(ProfileUpdateError.INVALID_EMAIL);
   }
 
-  // Transaction block: kunci baris user, cek duplikat, dan insert secara atomik.
-  // Dua request paralel dari user yang sama akan diserialkan oleh lock ini.
+  // Transaction block: kunci baris user, update bio, cek duplikat, dan insert
+  // request secara atomik. Kalau ada langkah gagal → semua di-rollback.
   return db.transaction(async (trx) => {
     const user = await findByWalletForUpdate(walletAddress, trx);
     if (!user) {
       throw new Error(ProfileUpdateError.USER_NOT_FOUND);
     }
 
-    // Keep only fields whose value actually differs from the current user value.
+    // 1. Update bio langsung (kalau dikirim).
+    let updatedUser = user;
+    if (bioProvided) {
+      updatedUser = await updateProfileBio(walletAddress, bioValue, trx);
+    }
+
+    // 2. Field approval → ambil hanya yang benar-benar berubah.
     const oldValues = {};
     const newValues = {};
     for (const [field, value] of Object.entries(requested)) {
@@ -80,16 +91,17 @@ async function submitProfileUpdateRequest(walletAddress, payload) {
       newValues[field] = value;
     }
 
-    if (Object.keys(newValues).length === 0) {
-      throw new Error(ProfileUpdateError.NO_CHANGES);
+    // 3. Buat request pending kalau ada field approval yang berubah.
+    let pendingRequest = null;
+    if (Object.keys(newValues).length > 0) {
+      const existing = await findActivePendingProfileUpdate(walletAddress, trx);
+      if (existing) {
+        throw new Error(ProfileUpdateError.PENDING_REQUEST_EXISTS);
+      }
+      pendingRequest = await createProfileUpdateRequest(walletAddress, oldValues, newValues, trx);
     }
 
-    const existing = await findActivePendingProfileUpdate(walletAddress, trx);
-    if (existing) {
-      throw new Error(ProfileUpdateError.PENDING_REQUEST_EXISTS);
-    }
-
-    return createProfileUpdateRequest(walletAddress, oldValues, newValues, trx);
+    return { user: updatedUser, pendingRequest };
   });
 }
 

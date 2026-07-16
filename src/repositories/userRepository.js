@@ -43,10 +43,11 @@ async function insertOnboarding(walletAddress, { name, bio, email, phone_number,
  * Update user bio directly (no approval needed).
  * @param {string} walletAddress
  * @param {string|null} bio
+ * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
  * @returns {Promise<object>}
  */
-async function updateProfileBio(walletAddress, bio) {
-  const [user] = await db('users')
+async function updateProfileBio(walletAddress, bio, trx = db) {
+  const [user] = await trx('users')
     .where({ wallet_address: walletAddress })
     .update({ bio })
     .returning('*');
@@ -67,15 +68,6 @@ async function updateProfilePicture(walletAddress, profilePictureUrl) {
   return user;
 }
 
-// ---------------------------------------------------------------------------
-// Profile update requests (name, phone_number, email, country, city)
-// These changes are not applied directly to the user; they go into
-// `request_profile_updates` with status='pending' and require admin approval.
-// ---------------------------------------------------------------------------
-
-// Fields that require admin approval before being applied to the user.
-const APPROVAL_FIELDS = ['name', 'phone_number', 'email', 'country', 'city'];
-
 /**
  * Find a user by wallet and lock the row for the duration of a transaction.
  * Used to take a consistent "before" snapshot and serialize concurrent
@@ -92,50 +84,10 @@ async function findByWalletForUpdate(walletAddress, trx = db) {
   return user || null;
 }
 
-/**
- * Find an existing pending profile update request for a wallet.
- * Used to prevent duplicate pending requests.
- * @param {string} userWallet
- * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
- * @returns {Promise<object|null>}
- */
-async function findActivePendingProfileUpdate(userWallet, trx = db) {
-  const row = await trx('request_profile_updates')
-    .where({ user_wallet: userWallet, status: 'pending' })
-    .first();
-  return row || null;
-}
-
-/**
- * Create a pending profile update request, storing before/after values.
- * @param {string} userWallet
- * @param {object} oldValues subset of APPROVAL_FIELDS with current values
- * @param {object} newValues subset of APPROVAL_FIELDS with requested values
- * @param {import('knex').Knex|import('knex').Knex.Transaction} [trx]
- * @returns {Promise<object>} the inserted row
- */
-async function createProfileUpdateRequest(userWallet, oldValues, newValues, trx = db) {
-  const insertData = {
-    user_wallet: userWallet,
-    status: 'pending',
-    requested_at: new Date(),
-  };
-  for (const field of APPROVAL_FIELDS) {
-    insertData[`${field}_old`] = oldValues[field] ?? null;
-    insertData[`${field}_new`] = newValues[field] ?? null;
-  }
-
-  const [row] = await trx('request_profile_updates').insert(insertData).returning('*');
-  return row;
-}
-
 module.exports = {
   findByWallet,
   insertOnboarding,
   updateProfileBio,
   updateProfilePicture,
-  APPROVAL_FIELDS,
   findByWalletForUpdate,
-  findActivePendingProfileUpdate,
-  createProfileUpdateRequest,
 };

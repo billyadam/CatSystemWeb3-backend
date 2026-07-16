@@ -2,7 +2,7 @@ const express = require('express');
 const authMiddleware = require('../../middleware/auth');
 const { uploadPdf } = require('../../services/uploadPdf');
 const { uploadProfile } = require('../../services/uploadProfile');
-const { findByWallet, insertOnboarding, updateProfileBio, updateProfilePicture } = require('../../repositories/userRepository');
+const { findByWallet, insertOnboarding, updateProfilePicture } = require('../../repositories/userRepository');
 const { findActiveRequestByWallet, createBreederRequest } = require('../../repositories/requestRepository');
 const {
   ProfileUpdateError,
@@ -127,36 +127,8 @@ router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), as
  * Body: { bio?, name?, phone_number?, email?, country?, city? }
  */
 router.put('/profile', authMiddleware, async (req, res) => {
-  const { bio } = req.body;
-
   try {
-    // Update bio secara langsung. EDIT: masukin ke service submitprofile
-    const user = await updateProfileBio(req.user.wallet, bio?.trim() ?? null);
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    // Untuk name/phone_number/email/country/city → buat request pending JIKA berubah.
-    let pendingRequest = null;
-    try {
-      pendingRequest = await submitProfileUpdateRequest(req.user.wallet, req.body);
-    } catch (err) {
-      switch (err.message) {
-        // Tidak ada field approval yang dikirim / tidak ada yang berubah → wajar, abaikan.
-        case ProfileUpdateError.NO_FIELDS:
-        case ProfileUpdateError.NO_CHANGES:
-          break;
-        case ProfileUpdateError.INVALID_EMAIL:
-          return res.status(400).json({ message: 'Invalid email format' });
-        case ProfileUpdateError.PENDING_REQUEST_EXISTS:
-          return res.status(409).json({
-            message: 'You already have a pending profile update request',
-          });
-        default:
-          throw err;
-      }
-    }
+    const { user, pendingRequest } = await submitProfileUpdateRequest(req.user.wallet, req.body);
 
     return res.status(200).json({
       message: pendingRequest
@@ -171,8 +143,21 @@ router.put('/profile', authMiddleware, async (req, res) => {
       pendingRequest,
     });
   } catch (err) {
-    console.error('[users] Error updating profile:', err.message);
-    return res.status(500).json({ message: 'Internal server error' });
+    switch (err.message) {
+      case ProfileUpdateError.NO_FIELDS:
+        return res.status(400).json({ message: 'No fields to update' });
+      case ProfileUpdateError.INVALID_EMAIL:
+        return res.status(400).json({ message: 'Invalid email format' });
+      case ProfileUpdateError.USER_NOT_FOUND:
+        return res.status(404).json({ message: 'User not found' });
+      case ProfileUpdateError.PENDING_REQUEST_EXISTS:
+        return res.status(409).json({
+          message: 'You already have a pending profile update request',
+        });
+      default:
+        console.error('[users] Error updating profile:', err.message);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
   }
 });
 
