@@ -4,7 +4,7 @@ const db = require('../database/knex');
  * Base query with user and admin joins.
  * Returns all columns from request_profile_updates plus user name and admin names.
  */
-const baseQuery = () =>
+const baseGetListQuery = () =>
   db('request_profile_updates')
     .leftJoin('users', 'request_profile_updates.user_wallet', 'users.wallet_address')
     .leftJoin('admins as approver', 'request_profile_updates.approved_by', 'approver.wallet_address')
@@ -33,7 +33,7 @@ async function findAll({ status, page = 1, limit = 10 } = {}) {
   const [{ count }] = await countQuery.count('id as count');
   const total = Number(count);
 
-  const query = baseQuery();
+  const query = baseGetListQuery();
   if (status) query.where({ 'request_profile_updates.status': status });
   const data = await query.limit(limit).offset(offset);
 
@@ -54,7 +54,7 @@ async function findAll({ status, page = 1, limit = 10 } = {}) {
  * @returns {Promise<object|null>}
  */
 async function findById(id) {
-  const row = await baseQuery()
+  const row = await baseGetListQuery()
     .where({ 'request_profile_updates.id': id })
     .first();
   return row || null;
