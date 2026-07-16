@@ -125,24 +125,19 @@ router.post('/request-breeder', authMiddleware, uploadPdf.single('document'), as
  * Update user profile.
  *
  * Body: { bio?, name?, phone_number?, email?, country?, city? }
- *
- * Aturan:
- *   - `bio`  → langsung mengganti data user.
- *   - `name`, `phone_number`, `email`, `country`, `city`
- *        → JIKA berubah, dibuatkan request pending (menunggu persetujuan admin).
  */
 router.put('/profile', authMiddleware, async (req, res) => {
   const { bio } = req.body;
 
   try {
-    // 1. Update bio secara langsung.
+    // Update bio secara langsung.
     const user = await updateProfileBio(req.user.wallet, bio?.trim() ?? null);
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // 2. Untuk name/phone_number/email/country/city → buat request pending JIKA berubah.
+    // Untuk name/phone_number/email/country/city → buat request pending JIKA berubah.
     let pendingRequest = null;
     try {
       pendingRequest = await submitProfileUpdateRequest(req.user.wallet, req.body);
