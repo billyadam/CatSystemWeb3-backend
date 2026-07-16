@@ -6,6 +6,7 @@ const usersRouter = require('./routes/user/users');
 const catsRouter = require('./routes/user/cats');
 const adminRouter = require('./routes/admin/admin');
 const requestRouter = require('./routes/admin/request');
+const profileUpdateRequestRouter = require('./routes/admin/profileUpdateRequest');
 
 const app = express();
 
@@ -47,5 +48,6 @@ app.use('/cats', catsRouter);
 // Admin
 app.use('/admin', adminRouter);
 app.use('/requests', requestRouter);
+app.use('/profile-update-requests', profileUpdateRequestRouter);
 
 module.exports = app;
