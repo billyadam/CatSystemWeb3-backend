@@ -130,7 +130,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
   const { bio } = req.body;
 
   try {
-    // Update bio secara langsung.
+    // Update bio secara langsung. EDIT: masukin ke service submitprofile
     const user = await updateProfileBio(req.user.wallet, bio?.trim() ?? null);
 
     if (!user) {
